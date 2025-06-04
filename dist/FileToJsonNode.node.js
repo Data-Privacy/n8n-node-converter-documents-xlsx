@@ -132,10 +132,12 @@ const strategies = {
     xls: async (buf) => processExcel(buf, "xls"),
     xlsx: async (buf) => processExcel(buf, "xlsx"),
     csv: async (buf) => {
+        const encoding = chardet_1.default.detect(buf) || "utf-8";
+        const decoded = iconv_lite_1.default.decode(buf, encoding);
         if (buf.length > CSV_STREAM_SIZE_LIMIT) {
-            return streamCsvStrategy(buf);
+            return streamCsvStrategy(decoded);
         }
-        return processExcel(buf, "csv");
+        return processExcel(decoded, "csv");
     },
     pdf: async (buf) => {
         const data = await (0, pdf_parse_1.default)(buf);
@@ -167,12 +169,12 @@ const strategies = {
         return { text: cleanText };
     },
 };
-async function streamCsvStrategy(buf) {
+async function streamCsvStrategy(data) {
     return new Promise((resolve, reject) => {
         const rows = [];
         let truncated = false;
         let totalRows = 0;
-        papaparse_1.default.parse(buf.toString("utf8"), {
+        papaparse_1.default.parse(data, {
             header: true,
             step: (result) => {
                 if (rows.length < CSV_STREAM_ROW_LIMIT) {
@@ -192,10 +194,10 @@ async function streamCsvStrategy(buf) {
         });
     });
 }
-async function processExcel(buf, ext) {
+async function processExcel(data, ext) {
     const wb = ext === "csv"
-        ? xlsx_1.default.read(buf.toString("utf8"), { type: "string", cellDates: true })
-        : xlsx_1.default.read(buf, { type: "buffer", cellDates: true });
+        ? xlsx_1.default.read(data, { type: "string", cellDates: true })
+        : xlsx_1.default.read(data, { type: "buffer", cellDates: true });
     const sheets = {};
     wb.SheetNames.forEach((s) => {
         const js = xlsx_1.default.utils.sheet_to_json(wb.Sheets[s], {
@@ -258,7 +260,6 @@ class FileToJsonNode {
         const maxFileSize = 50 * 1024 * 1024; // 50 MB
         const maxConcurrency = 4; // Можно вынести в параметры нода
         const processItem = async (item, i) => {
-            const results = [];
             const prop = this.getNodeParameter("binaryPropertyName", i, "data");
             // --- Валидация входных данных ---
             if (!item || typeof item !== "object")
@@ -309,11 +310,17 @@ class FileToJsonNode {
                 fileType: ext,
                 processedAt: new Date().toISOString(),
             };
-            results.push({ json });
-            return results[0];
+            return { json };
         };
         const results = await promisePool(items, processItem, maxConcurrency);
-        return [results];
+        // Объединяем все результаты в один item
+        return [[{
+                    json: {
+                        files: results.map(result => result.json),
+                        totalFiles: results.length,
+                        processedAt: new Date().toISOString()
+                    }
+                }]];
     }
 }
 exports.FileToJsonNode = FileToJsonNode;
