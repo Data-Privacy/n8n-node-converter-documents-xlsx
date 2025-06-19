@@ -162,25 +162,15 @@ const strategies = {
         return { text: JSON.stringify(parsed, null, 2) };
     },
     xls: async (buf) => {
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(buf);
-        const sheets = {};
-        workbook.eachSheet((worksheet, _sheetId) => {
-            const sheetName = worksheet.name;
-            const jsonData = [];
-            worksheet.eachRow((row, _rowNumber) => {
-                const rowData = {};
-                row.eachCell((cell, colNumber) => {
-                    const columnLetter = numberToColumn(colNumber - 1);
-                    rowData[columnLetter] = cell.value;
-                });
-                if (Object.keys(rowData).length > 0) {
-                    jsonData.push(rowData);
-                }
-            });
-            sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
-        });
-        return { sheets };
+        // XLS - старый бинарный формат Excel, используем officeparser для извлечения текста
+        // так как ExcelJS.xlsx.load() работает только с новым XLSX форматом (ZIP)
+        try {
+            const text = await (0, helpers_1.extractViaOfficeParser)(buf);
+            return { text };
+        }
+        catch (error) {
+            throw new errors_1.ProcessingError(`Ошибка обработки XLS: ${error instanceof Error ? error.message : String(error)}`);
+        }
     },
     xlsx: async (buf) => {
         const workbook = new ExcelJS.Workbook();
