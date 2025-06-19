@@ -50,7 +50,7 @@ const mammoth_1 = __importDefault(require("mammoth"));
 const textract_1 = __importDefault(require("textract"));
 const xlsx_1 = __importDefault(require("xlsx"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
-const cheerio_1 = __importDefault(require("cheerio"));
+const cheerio = __importStar(require("cheerio"));
 const file_type_1 = require("file-type");
 const chardet_1 = __importDefault(require("chardet"));
 const iconv_lite_1 = __importDefault(require("iconv-lite"));
@@ -61,6 +61,22 @@ const papaparse_1 = __importDefault(require("papaparse"));
 const readline = __importStar(require("readline"));
 const stream_1 = require("stream");
 const sanitize_html_1 = __importDefault(require("sanitize-html"));
+/**
+ * Безопасная валидация и очистка имени файла
+ */
+function sanitizeFileName(fileName) {
+    if (!fileName || typeof fileName !== 'string') {
+        return 'unknown_file';
+    }
+    // Проверка на path traversal
+    if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+        throw new errors_1.FileTypeError('Invalid file name: contains path traversal characters');
+    }
+    // Удаляем опасные символы - убираем control characters из regex
+    const sanitized = fileName.replace(/[<>:"|?*]/g, '_').replace(/[\u0000-\u001f\u0080-\u009f]/g, '_');
+    // Ограничиваем длину
+    return sanitized.length > 255 ? sanitized.substring(0, 255) : sanitized;
+}
 /**
  * Promise pool для ограничения количества одновременных задач
  */
@@ -121,16 +137,37 @@ async function streamTxtStrategy(buf) {
 }
 // Стратегии обработки форматов
 const strategies = {
-    docx: async (buf) => {
-        const { value } = await mammoth_1.default.extractRawText({ buffer: buf });
-        return { text: value };
-    },
     doc: async (buf) => ({
         text: await (0, helpers_1.extractViaTextract)(buf, "application/msword", textract_1.default),
     }),
-    xml: async (buf) => (await (0, xml2js_1.parseStringPromise)(buf.toString("utf8"), { explicitArray: false })),
-    xls: async (buf) => processExcel(buf, "xls"),
-    xlsx: async (buf) => processExcel(buf, "xlsx"),
+    docx: async (buf) => {
+        const result = await mammoth_1.default.extractRawText({ buffer: buf });
+        return { text: result.value };
+    },
+    xml: async (buf) => {
+        const parsed = await (0, xml2js_1.parseStringPromise)(buf.toString("utf8"));
+        return { text: JSON.stringify(parsed, null, 2) };
+    },
+    xls: async (buf) => {
+        const wb = xlsx_1.default.read(buf, { type: "buffer" });
+        const sheets = {};
+        wb.SheetNames.forEach((sheetName) => {
+            const sheet = wb.Sheets[sheetName];
+            const jsonData = xlsx_1.default.utils.sheet_to_json(sheet);
+            sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
+        });
+        return { sheets };
+    },
+    xlsx: async (buf) => {
+        const wb = xlsx_1.default.read(buf, { type: "buffer" });
+        const sheets = {};
+        wb.SheetNames.forEach((sheetName) => {
+            const sheet = wb.Sheets[sheetName];
+            const jsonData = xlsx_1.default.utils.sheet_to_json(sheet);
+            sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
+        });
+        return { sheets };
+    },
     csv: async (buf) => {
         const encoding = chardet_1.default.detect(buf) || "utf-8";
         const decoded = iconv_lite_1.default.decode(buf, encoding);
@@ -156,18 +193,8 @@ const strategies = {
     pptx: async (buf) => ({
         text: await (0, helpers_1.extractViaTextract)(buf, "application/vnd.openxmlformats-officedocument.presentationml.presentation", textract_1.default),
     }),
-    html: async (buf) => {
-        const $ = cheerio_1.default.load(buf.toString("utf8"));
-        const rawText = $("body").text().replace(/\s+/g, " ").trim();
-        const cleanText = (0, sanitize_html_1.default)(rawText, { allowedTags: [], allowedAttributes: {} });
-        return { text: cleanText };
-    },
-    htm: async (buf) => {
-        const $ = cheerio_1.default.load(buf.toString("utf8"));
-        const rawText = $("body").text().replace(/\s+/g, " ").trim();
-        const cleanText = (0, sanitize_html_1.default)(rawText, { allowedTags: [], allowedAttributes: {} });
-        return { text: cleanText };
-    },
+    html: async (buf) => processHtml(buf),
+    htm: async (buf) => processHtml(buf),
 };
 async function streamCsvStrategy(data) {
     return new Promise((resolve, reject) => {
@@ -210,6 +237,20 @@ async function processExcel(data, ext) {
     return { sheets };
 }
 /**
+ * Обработка HTML/HTM файлов
+ */
+async function processHtml(buf) {
+    try {
+        const $ = cheerio.load(buf.toString("utf8"));
+        const rawText = $("body").text().replace(/\s+/g, " ").trim();
+        const cleanText = (0, sanitize_html_1.default)(rawText, { allowedTags: [], allowedAttributes: {} });
+        return { text: cleanText };
+    }
+    catch (error) {
+        throw new errors_1.ProcessingError(`Ошибка обработки HTML: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+/**
  * Кастомный нод для n8n: конвертация файлов в JSON/текст
  * Поддержка DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
  */
@@ -233,13 +274,33 @@ class FileToJsonNode {
                     default: "data",
                     description: "Имя поля, в котором лежит бинарный файл",
                 },
+                {
+                    displayName: "Max File Size (MB)",
+                    name: "maxFileSize",
+                    type: "number",
+                    default: 50,
+                    description: "Максимальный размер файла в мегабайтах",
+                    typeOptions: {
+                        minValue: 1,
+                        maxValue: 100
+                    }
+                },
+                {
+                    displayName: "Max Concurrency",
+                    name: "maxConcurrency",
+                    type: "number",
+                    default: 4,
+                    description: "Максимальное количество одновременно обрабатываемых файлов",
+                    typeOptions: {
+                        minValue: 1,
+                        maxValue: 10
+                    }
+                },
             ],
         };
     }
     /**
      * Основной метод выполнения нода n8n
-     * @this {import('n8n-workflow').IExecuteFunctions}
-     * @returns {Promise<Array>} - массив результатов для n8n
      */
     async execute() {
         const items = this.getInputData();
@@ -257,18 +318,21 @@ class FileToJsonNode {
             "html",
             "htm",
         ];
-        const maxFileSize = 50 * 1024 * 1024; // 50 MB
-        const maxConcurrency = 4; // Можно вынести в параметры нода
+        const maxFileSize = this.getNodeParameter('maxFileSize', 0, 50) * 1024 * 1024; // MB в байты
+        const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4);
         const processItem = async (item, i) => {
             const prop = this.getNodeParameter("binaryPropertyName", i, "data");
             // --- Валидация входных данных ---
             if (!item || typeof item !== "object")
                 throw new errors_1.FileTypeError(`Item #${i} не является объектом`);
-            if (!item.binary || typeof item.binary !== "object")
+            const itemObj = item;
+            if (!itemObj.binary || typeof itemObj.binary !== "object")
                 throw new errors_1.FileTypeError(`Item #${i} не содержит binary-данных`);
-            if (!item.binary[prop])
+            const binary = itemObj.binary;
+            if (!binary[prop])
                 throw new errors_1.FileTypeError(`Binary property "${prop}" отсутствует (item ${i})`);
-            if (!item.binary[prop].fileName || typeof item.binary[prop].fileName !== "string")
+            const binaryProp = binary[prop];
+            if (!binaryProp.fileName || typeof binaryProp.fileName !== "string")
                 throw new errors_1.FileTypeError(`Файл не содержит корректного имени (item ${i})`);
             const buf = await this.helpers.getBinaryDataBuffer(i, prop);
             if (!Buffer.isBuffer(buf) || buf.length === 0)
@@ -276,15 +340,26 @@ class FileToJsonNode {
             if (buf.length > maxFileSize)
                 throw new errors_1.FileTooLargeError("Файл слишком большой (максимум 50 MB)");
             // --- Конец валидации ---
-            const name = item.binary[prop].fileName ?? "";
+            const name = sanitizeFileName(binaryProp.fileName ?? "");
             let ext = path_1.default.extname(name).slice(1).toLowerCase();
             /* ── autodetect ── */
             if (!ext || !supported.includes(ext)) {
-                const ft = await (0, file_type_1.fileTypeFromBuffer)(buf).catch(() => null);
-                if (ft?.ext && supported.includes(ft.ext))
-                    ext = ft.ext;
-                else
+                try {
+                    const ft = await (0, file_type_1.fileTypeFromBuffer)(buf);
+                    if (ft?.ext && supported.includes(ft.ext)) {
+                        ext = ft.ext;
+                    }
+                    else {
+                        throw new errors_1.UnsupportedFormatError(`Неподдерживаемый тип файла: ${ext || "unknown"}`);
+                    }
+                }
+                catch (error) {
+                    this.logger?.warn('File type detection failed', {
+                        fileName: name,
+                        error: error instanceof Error ? error.message : String(error)
+                    });
                     throw new errors_1.UnsupportedFormatError(`Неподдерживаемый тип файла: ${ext || "unknown"}`);
+                }
             }
             this.logger?.info("ConvertFileToJSON →", {
                 file: name || "[no-name]",
@@ -292,6 +367,7 @@ class FileToJsonNode {
                 size: buf.length,
             });
             let json = {};
+            const startTime = performance.now();
             try {
                 if (!strategies[ext]) {
                     throw new errors_1.UnsupportedFormatError(`Формат "${ext}" не поддерживается`);
@@ -301,11 +377,18 @@ class FileToJsonNode {
             catch (e) {
                 throw new errors_1.ProcessingError(`Ошибка обработки ${ext.toUpperCase()}: ${e.message}`);
             }
+            const processingTime = performance.now() - startTime;
+            this.logger?.info('Processing completed', {
+                file: name,
+                size: buf.length,
+                time: `${processingTime.toFixed(2)}ms`,
+                type: ext
+            });
             if ("text" in json &&
                 (!json.text || json.text.trim().length === 0))
                 throw new errors_1.EmptyFileError("Файл пуст или не содержит текста");
             json.metadata = {
-                fileName: name || null,
+                fileName: sanitizeFileName(name) || null,
                 fileSize: buf.length,
                 fileType: ext,
                 processedAt: new Date().toISOString(),

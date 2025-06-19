@@ -13,12 +13,6 @@ function extractViaTextract(buffer, mime, textract) {
  * Ограничивает количество строк в Excel-таблице
  */
 function limitExcelSheet(sheet, maxRows = 10000) {
-    return sheet.length > maxRows
-        ? {
-            data: sheet.slice(0, maxRows),
-            truncated: true,
-            totalRows: sheet.length,
-        }
-        : sheet;
+    return sheet.length > maxRows ? sheet.slice(0, maxRows) : sheet;
 }
 //# sourceMappingURL=helpers.js.map

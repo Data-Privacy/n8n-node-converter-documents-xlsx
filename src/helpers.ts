@@ -6,7 +6,9 @@
 export function extractViaTextract(
   buffer: Buffer,
   mime: string,
-  textract: any
+  textract: {
+    fromBufferWithMime: (mime: string, buffer: Buffer, callback: (err: Error | null, text: string) => void) => void;
+  }
 ): Promise<string> {
   return new Promise((res, rej) =>
     textract.fromBufferWithMime(mime, buffer, (err: Error | null, text: string) =>
@@ -19,14 +21,8 @@ export function extractViaTextract(
  * Ограничивает количество строк в Excel-таблице
  */
 export function limitExcelSheet(
-  sheet: any[],
+  sheet: unknown[],
   maxRows: number = 10_000
-): any[] | { data: any[]; truncated: boolean; totalRows: number } {
-  return sheet.length > maxRows
-    ? {
-        data: sheet.slice(0, maxRows),
-        truncated: true,
-        totalRows: sheet.length,
-      }
-    : sheet;
+): unknown[] {
+  return sheet.length > maxRows ? sheet.slice(0, maxRows) : sheet;
 }

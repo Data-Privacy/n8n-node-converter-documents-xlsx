@@ -1,13 +1,4 @@
-interface N8nThis {
-    getInputData: () => any[];
-    getNodeParameter: (name: string, itemIndex: number, defaultValue?: any) => any;
-    helpers: {
-        getBinaryDataBuffer: (itemIndex: number, propertyName: string) => Promise<Buffer>;
-    };
-    logger?: {
-        info: (...args: any[]) => void;
-    };
-}
+import { IExecuteFunctions } from 'n8n-workflow';
 /**
  * Кастомный нод для n8n: конвертация файлов в JSON/текст
  * Поддержка DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
@@ -25,19 +16,28 @@ declare class FileToJsonNode {
         };
         inputs: string[];
         outputs: string[];
-        properties: {
+        properties: ({
             displayName: string;
             name: string;
             type: string;
             default: string;
             description: string;
-        }[];
+            typeOptions?: undefined;
+        } | {
+            displayName: string;
+            name: string;
+            type: string;
+            default: number;
+            description: string;
+            typeOptions: {
+                minValue: number;
+                maxValue: number;
+            };
+        })[];
     };
     /**
      * Основной метод выполнения нода n8n
-     * @this {import('n8n-workflow').IExecuteFunctions}
-     * @returns {Promise<Array>} - массив результатов для n8n
      */
-    execute(this: N8nThis): Promise<any[]>;
+    execute(this: IExecuteFunctions): Promise<unknown[]>;
 }
 export { FileToJsonNode };
