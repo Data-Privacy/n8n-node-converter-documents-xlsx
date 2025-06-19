@@ -22,6 +22,14 @@ helperFiles.forEach(file => {
   }
 });
 
+// Копируем SVG файлы (иконки)
+const svgFiles = fs.readdirSync(path.join(__dirname, 'dist')).filter(file => file.endsWith('.svg'));
+svgFiles.forEach(file => {
+  const srcFile = path.join(__dirname, 'dist', file);
+  const dstFile = path.join(standaloneDir, file);
+  fs.copyFileSync(srcFile, dstFile);
+});
+
 // Создаем минимальный package.json только с необходимыми зависимостями
 const originalPackage = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const standalonePackage = {
@@ -76,11 +84,10 @@ fs.writeFileSync(path.join(standaloneDir, 'README.md'), standaloneReadme);
 
 console.log('✅ Standalone версия создана в папке ./standalone/');
 console.log('📁 Содержимое:');
-console.log('   - FileToJsonNode.node.js');
-console.log('   - helpers.js');
-console.log('   - errors.js');
-console.log('   - package.json (только runtime зависимости)');
-console.log('   - README.md');
+const files = fs.readdirSync(standaloneDir);
+files.forEach(file => {
+  console.log(`   - ${file}`);
+});
 console.log('');
 console.log('🚀 Для использования в n8n:');
 console.log('   1. cp -r ./standalone ~/.n8n/custom-nodes/n8n-node-converter-documents');

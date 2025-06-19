@@ -1,6 +1,6 @@
 {
   "name": "n8n-node-converter-documents-standalone",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Standalone version of n8n document converter node",
   "main": "FileToJsonNode.node.js",
   "dependencies": {

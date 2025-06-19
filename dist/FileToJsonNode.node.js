@@ -308,7 +308,7 @@ class FileToJsonNode {
         this.description = {
             displayName: "Convert File to JSON",
             name: "convertFileToJson",
-            icon: "fa:file-code-o",
+            icon: "file:icon.svg",
             group: ["transform"],
             version: 5,
             description: "DOC / DOCX / XML / XLS / XLSX / CSV / PDF / TXT / PPT / PPTX / HTML → JSON|text",
