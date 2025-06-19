@@ -5,6 +5,8 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_call:
+    # Позволяет вызывать этот workflow из других workflows
 
 jobs:
   test:

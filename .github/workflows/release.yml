@@ -1,0 +1,157 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # Сначала запускаем все тесты
+  test:
+    name: Run Tests Before Release
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  # Создаем релиз только после успешного прохождения тестов
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Нужно для генерации changelog
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Dependencies
+      run: npm ci
+      
+    - name: Build Project
+      run: npm run build
+      
+    - name: Get Version from Tag
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          TAG="${{ github.event.inputs.tag }}"
+        else
+          TAG=${GITHUB_REF#refs/tags/}
+        fi
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+        echo "Release version: $TAG"
+        
+    - name: Update Package Version
+      run: |
+        npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+        echo "✅ Package version updated to ${{ steps.version.outputs.version }}"
+        
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        echo "# 🚀 Release ${{ steps.version.outputs.tag }}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## 📋 Changes in this release:" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        
+        # Получаем коммиты с последнего тега
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          echo "### 📝 Commits since $LAST_TAG:" >> CHANGELOG.md
+          git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+        else
+          echo "### 📝 All commits:" >> CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+        fi
+        
+        echo "" >> CHANGELOG.md
+        echo "## 🏗️ Build Information:" >> CHANGELOG.md
+        echo "- **Built on:** $(date)" >> CHANGELOG.md
+        echo "- **Node.js version:** $(node --version)" >> CHANGELOG.md
+        echo "- **npm version:** $(npm --version)" >> CHANGELOG.md
+        echo "- **Git commit:** $(git rev-parse HEAD)" >> CHANGELOG.md
+        
+        # Показываем changelog
+        echo "Generated changelog:"
+        cat CHANGELOG.md
+        
+    - name: Create Build Archive
+      run: |
+        # Создаем архив с артефактами сборки
+        tar -czf n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz \
+          dist/ \
+          package.json \
+          README.md \
+          audit.md
+        
+        # Проверяем что создался
+        ls -la *.tar.gz
+        echo "✅ Build archive created"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: 🚀 Release ${{ steps.version.outputs.tag }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+        files: |
+          n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz
+          package.json
+        
+    - name: Release Summary
+      run: |
+        echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release URL:** ${{ steps.create_release.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Assets uploaded:** 2 files" >> $GITHUB_STEP_SUMMARY
+
+  # Уведомление о релизе
+  notify:
+    name: Post-Release Notification
+    runs-on: ubuntu-latest
+    needs: [test, release]
+    if: always()
+    
+    steps:
+    - name: Notify Success
+      if: needs.release.result == 'success'
+      run: |
+        echo "🎉 Release completed successfully!"
+        echo "✅ Tests passed"
+        echo "✅ Release created"
+        echo "✅ Assets uploaded"
+        
+    - name: Notify Failure
+      if: needs.release.result == 'failure' || needs.test.result == 'failure'
+      run: |
+        echo "❌ Release failed!"
+        if [ "${{ needs.test.result }}" = "failure" ]; then
+          echo "❌ Tests failed"
+        fi
+        if [ "${{ needs.release.result }}" = "failure" ]; then
+          echo "❌ Release creation failed"
+        fi
+        exit 1 

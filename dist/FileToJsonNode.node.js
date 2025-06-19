@@ -72,8 +72,10 @@ function sanitizeFileName(fileName) {
     if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
         throw new errors_1.FileTypeError('Invalid file name: contains path traversal characters');
     }
-    // Удаляем опасные символы - убираем control characters из regex
-    const sanitized = fileName.replace(/[<>:"|?*]/g, '_').replace(/[\u0000-\u001f\u0080-\u009f]/g, '_');
+    // Удаляем опасные символы - создаем control characters regex программно
+    const dangerousChars = /[<>:"|?*]/g;
+    const controlChars = new RegExp('[' + String.fromCharCode(0) + '-' + String.fromCharCode(31) + String.fromCharCode(127) + '-' + String.fromCharCode(159) + ']', 'g');
+    const sanitized = fileName.replace(dangerousChars, '_').replace(controlChars, '_');
     // Ограничиваем длину
     return sanitized.length > 255 ? sanitized.substring(0, 255) : sanitized;
 }
@@ -199,22 +201,23 @@ const strategies = {
 async function streamCsvStrategy(data) {
     return new Promise((resolve, reject) => {
         const rows = [];
-        let truncated = false;
-        let totalRows = 0;
+        let rowCount = 0;
         papaparse_1.default.parse(data, {
             header: true,
+            skipEmptyLines: true,
             step: (result) => {
-                if (rows.length < CSV_STREAM_ROW_LIMIT) {
+                if (rowCount < CSV_STREAM_ROW_LIMIT) {
                     rows.push(result.data);
+                    rowCount++;
                 }
-                else {
-                    truncated = true;
-                }
-                totalRows++;
             },
             complete: () => {
+                const warning = rowCount >= CSV_STREAM_ROW_LIMIT
+                    ? `CSV обрезан до ${CSV_STREAM_ROW_LIMIT} строк`
+                    : undefined;
                 resolve({
-                    sheets: { Sheet1: truncated ? { data: rows, truncated, totalRows } : rows },
+                    sheets: { Sheet1: rows },
+                    warning,
                 });
             },
             error: (err) => reject(err),

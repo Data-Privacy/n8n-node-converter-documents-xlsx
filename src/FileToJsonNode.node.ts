@@ -64,8 +64,10 @@ function sanitizeFileName(fileName: string): string {
     throw new FileTypeError('Invalid file name: contains path traversal characters');
   }
   
-  // Удаляем опасные символы - убираем control characters из regex
-  const sanitized = fileName.replace(/[<>:"|?*]/g, '_').replace(/[\u0000-\u001f\u0080-\u009f]/g, '_');
+  // Удаляем опасные символы - создаем control characters regex программно
+  const dangerousChars = /[<>:"|?*]/g;
+  const controlChars = new RegExp('[' + String.fromCharCode(0) + '-' + String.fromCharCode(31) + String.fromCharCode(127) + '-' + String.fromCharCode(159) + ']', 'g');
+  const sanitized = fileName.replace(dangerousChars, '_').replace(controlChars, '_');
   
   // Ограничиваем длину
   return sanitized.length > 255 ? sanitized.substring(0, 255) : sanitized;
@@ -198,22 +200,24 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
 
 async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
   return new Promise((resolve, reject) => {
-    const rows: any[] = [];
-    let truncated = false;
-    let totalRows = 0;
+    const rows: unknown[] = [];
+    let rowCount = 0;
     Papa.parse(data, {
       header: true,
+      skipEmptyLines: true,
       step: (result) => {
-        if (rows.length < CSV_STREAM_ROW_LIMIT) {
+        if (rowCount < CSV_STREAM_ROW_LIMIT) {
           rows.push(result.data);
-        } else {
-          truncated = true;
+          rowCount++;
         }
-        totalRows++;
       },
       complete: () => {
+        const warning = rowCount >= CSV_STREAM_ROW_LIMIT
+          ? `CSV обрезан до ${CSV_STREAM_ROW_LIMIT} строк`
+          : undefined;
         resolve({
-          sheets: { Sheet1: truncated ? { data: rows, truncated, totalRows } : rows },
+          sheets: { Sheet1: rows },
+          warning,
         });
       },
       error: (err: Error) => reject(err),
@@ -226,7 +230,7 @@ async function processExcel(data: Buffer | string, ext: string): Promise<Partial
     ext === "csv"
       ? xlsx.read(data, { type: "string", cellDates: true })
       : xlsx.read(data, { type: "buffer", cellDates: true });
-  const sheets: Record<string, any> = {};
+  const sheets: Record<string, unknown[]> = {};
   wb.SheetNames.forEach((s) => {
     const js = xlsx.utils.sheet_to_json(wb.Sheets[s], {
       defval: null,
