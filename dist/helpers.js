@@ -15,7 +15,7 @@ function extractViaOfficeParser(buffer) {
  * @deprecated Устаревшая функция для обратной совместимости
  * Используйте extractViaOfficeParser вместо этой функции
  */
-function extractViaTextract(buffer, mime, textract) {
+function extractViaTextract(buffer, _mime, _textract) {
     return extractViaOfficeParser(buffer);
 }
 /**

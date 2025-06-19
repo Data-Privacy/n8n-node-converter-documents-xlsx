@@ -16,8 +16,8 @@ export function extractViaOfficeParser(
  */
 export function extractViaTextract(
   buffer: Buffer,
-  mime: string,
-  textract: unknown
+  _mime: string,
+  _textract: unknown
 ): Promise<string> {
   return extractViaOfficeParser(buffer);
 }

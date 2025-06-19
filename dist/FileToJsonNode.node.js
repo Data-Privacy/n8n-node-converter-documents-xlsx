@@ -165,10 +165,10 @@ const strategies = {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buf);
         const sheets = {};
-        workbook.eachSheet((worksheet, sheetId) => {
+        workbook.eachSheet((worksheet, _sheetId) => {
             const sheetName = worksheet.name;
             const jsonData = [];
-            worksheet.eachRow((row, rowNumber) => {
+            worksheet.eachRow((row, _rowNumber) => {
                 const rowData = {};
                 row.eachCell((cell, colNumber) => {
                     const columnLetter = numberToColumn(colNumber - 1);
@@ -186,10 +186,10 @@ const strategies = {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buf);
         const sheets = {};
-        workbook.eachSheet((worksheet, sheetId) => {
+        workbook.eachSheet((worksheet, _sheetId) => {
             const sheetName = worksheet.name;
             const jsonData = [];
-            worksheet.eachRow((row, rowNumber) => {
+            worksheet.eachRow((row, _rowNumber) => {
                 const rowData = {};
                 row.eachCell((cell, colNumber) => {
                     const columnLetter = numberToColumn(colNumber - 1);
@@ -268,10 +268,10 @@ async function processExcel(data, ext) {
         await workbook.xlsx.load(data);
     }
     const sheets = {};
-    workbook.eachSheet((worksheet, sheetId) => {
+    workbook.eachSheet((worksheet, _sheetId) => {
         const sheetName = worksheet.name;
         const jsonData = [];
-        worksheet.eachRow((row, rowNumber) => {
+        worksheet.eachRow((row, _rowNumber) => {
             const rowData = {};
             row.eachCell((cell, colNumber) => {
                 const columnLetter = numberToColumn(colNumber);

@@ -165,10 +165,10 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buf);
     const sheets: Record<string, unknown[]> = {};
-    workbook.eachSheet((worksheet, sheetId) => {
+    workbook.eachSheet((worksheet, _sheetId) => {
       const sheetName = worksheet.name;
       const jsonData: unknown[] = [];
-      worksheet.eachRow((row, rowNumber) => {
+      worksheet.eachRow((row, _rowNumber) => {
         const rowData: Record<string, unknown> = {};
         row.eachCell((cell, colNumber) => {
           const columnLetter = numberToColumn(colNumber - 1);
@@ -186,10 +186,10 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buf);
     const sheets: Record<string, unknown[]> = {};
-    workbook.eachSheet((worksheet, sheetId) => {
+    workbook.eachSheet((worksheet, _sheetId) => {
       const sheetName = worksheet.name;
       const jsonData: unknown[] = [];
-      worksheet.eachRow((row, rowNumber) => {
+      worksheet.eachRow((row, _rowNumber) => {
         const rowData: Record<string, unknown> = {};
         row.eachCell((cell, colNumber) => {
           const columnLetter = numberToColumn(colNumber - 1);
@@ -271,10 +271,10 @@ async function processExcel(data: Buffer | string, ext: string): Promise<Partial
   }
   
   const sheets: Record<string, unknown[]> = {};
-  workbook.eachSheet((worksheet, sheetId) => {
+  workbook.eachSheet((worksheet, _sheetId) => {
     const sheetName = worksheet.name;
     const jsonData: unknown[] = [];
-    worksheet.eachRow((row, rowNumber) => {
+    worksheet.eachRow((row, _rowNumber) => {
       const rowData: Record<string, unknown> = {};
       row.eachCell((cell, colNumber) => {
         const columnLetter = numberToColumn(colNumber);
