@@ -1,5 +1,5 @@
 {
-  "name": "n8n-node-converter-documents",
+  "name": "@mazix/n8n-node-converter-documents",
   "version": "1.0.0",
   "description": "",
   "main": "dist/FileToJsonNode.node.js",
@@ -25,8 +25,8 @@
     "url": "git+https://github.com/mazixs/n8n-node-converter-documents.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "mazix",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/mazixs/n8n-node-converter-documents/issues"
