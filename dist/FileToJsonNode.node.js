@@ -47,8 +47,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileToJsonNode = void 0;
 const xml2js_1 = require("xml2js");
 const mammoth_1 = __importDefault(require("mammoth"));
-const textract_1 = __importDefault(require("textract"));
-const xlsx_1 = __importDefault(require("xlsx"));
+const ExcelJS = __importStar(require("exceljs"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const cheerio = __importStar(require("cheerio"));
 const file_type_1 = require("file-type");
@@ -137,10 +136,22 @@ async function streamTxtStrategy(buf) {
         rl.on("error", (err) => reject(err));
     });
 }
+/**
+ * Конвертация номера колонки в букву (A, B, C...)
+ */
+function numberToColumn(num) {
+    let result = '';
+    while (num > 0) {
+        num--; // Делаем 0-based
+        result = String.fromCharCode(65 + (num % 26)) + result;
+        num = Math.floor(num / 26);
+    }
+    return result;
+}
 // Стратегии обработки форматов
 const strategies = {
     doc: async (buf) => ({
-        text: await (0, helpers_1.extractViaTextract)(buf, "application/msword", textract_1.default),
+        text: await (0, helpers_1.extractViaOfficeParser)(buf),
     }),
     docx: async (buf) => {
         const result = await mammoth_1.default.extractRawText({ buffer: buf });
@@ -151,21 +162,43 @@ const strategies = {
         return { text: JSON.stringify(parsed, null, 2) };
     },
     xls: async (buf) => {
-        const wb = xlsx_1.default.read(buf, { type: "buffer" });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buf);
         const sheets = {};
-        wb.SheetNames.forEach((sheetName) => {
-            const sheet = wb.Sheets[sheetName];
-            const jsonData = xlsx_1.default.utils.sheet_to_json(sheet);
+        workbook.eachSheet((worksheet, sheetId) => {
+            const sheetName = worksheet.name;
+            const jsonData = [];
+            worksheet.eachRow((row, rowNumber) => {
+                const rowData = {};
+                row.eachCell((cell, colNumber) => {
+                    const columnLetter = numberToColumn(colNumber - 1);
+                    rowData[columnLetter] = cell.value;
+                });
+                if (Object.keys(rowData).length > 0) {
+                    jsonData.push(rowData);
+                }
+            });
             sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
         });
         return { sheets };
     },
     xlsx: async (buf) => {
-        const wb = xlsx_1.default.read(buf, { type: "buffer" });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buf);
         const sheets = {};
-        wb.SheetNames.forEach((sheetName) => {
-            const sheet = wb.Sheets[sheetName];
-            const jsonData = xlsx_1.default.utils.sheet_to_json(sheet);
+        workbook.eachSheet((worksheet, sheetId) => {
+            const sheetName = worksheet.name;
+            const jsonData = [];
+            worksheet.eachRow((row, rowNumber) => {
+                const rowData = {};
+                row.eachCell((cell, colNumber) => {
+                    const columnLetter = numberToColumn(colNumber - 1);
+                    rowData[columnLetter] = cell.value;
+                });
+                if (Object.keys(rowData).length > 0) {
+                    jsonData.push(rowData);
+                }
+            });
             sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
         });
         return { sheets };
@@ -190,10 +223,10 @@ const strategies = {
         return { text: iconv_lite_1.default.decode(buf, encoding) };
     },
     ppt: async (buf) => ({
-        text: await (0, helpers_1.extractViaTextract)(buf, "application/vnd.ms-powerpoint", textract_1.default),
+        text: await (0, helpers_1.extractViaOfficeParser)(buf),
     }),
     pptx: async (buf) => ({
-        text: await (0, helpers_1.extractViaTextract)(buf, "application/vnd.openxmlformats-officedocument.presentationml.presentation", textract_1.default),
+        text: await (0, helpers_1.extractViaOfficeParser)(buf),
     }),
     html: async (buf) => processHtml(buf),
     htm: async (buf) => processHtml(buf),
@@ -225,17 +258,30 @@ async function streamCsvStrategy(data) {
     });
 }
 async function processExcel(data, ext) {
-    const wb = ext === "csv"
-        ? xlsx_1.default.read(data, { type: "string", cellDates: true })
-        : xlsx_1.default.read(data, { type: "buffer", cellDates: true });
+    const workbook = new ExcelJS.Workbook();
+    if (ext === "csv") {
+        // Для CSV используем Papa Parse (уже реализовано в streamCsvStrategy)
+        return streamCsvStrategy(data);
+    }
+    else {
+        // Для Excel файлов загружаем через ExcelJS
+        await workbook.xlsx.load(data);
+    }
     const sheets = {};
-    wb.SheetNames.forEach((s) => {
-        const js = xlsx_1.default.utils.sheet_to_json(wb.Sheets[s], {
-            defval: null,
-            raw: false,
-            dateNF: "yyyy-mm-dd",
+    workbook.eachSheet((worksheet, sheetId) => {
+        const sheetName = worksheet.name;
+        const jsonData = [];
+        worksheet.eachRow((row, rowNumber) => {
+            const rowData = {};
+            row.eachCell((cell, colNumber) => {
+                const columnLetter = numberToColumn(colNumber);
+                rowData[columnLetter] = cell.value;
+            });
+            if (Object.keys(rowData).length > 0) {
+                jsonData.push(rowData);
+            }
         });
-        sheets[s] = (0, helpers_1.limitExcelSheet)(js);
+        sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
     });
     return { sheets };
 }

@@ -1,20 +1,25 @@
 // Вспомогательные функции для работы с файлами в кастомном ноде n8n
+import { parseOfficeAsync } from 'officeparser';
 
 /**
- * Извлекает текст из буфера с помощью textract
+ * Извлекает текст из буфера с помощью officeparser
+ */
+export function extractViaOfficeParser(
+  buffer: Buffer
+): Promise<string> {
+  return parseOfficeAsync(buffer);
+}
+
+/**
+ * @deprecated Устаревшая функция для обратной совместимости
+ * Используйте extractViaOfficeParser вместо этой функции
  */
 export function extractViaTextract(
   buffer: Buffer,
   mime: string,
-  textract: {
-    fromBufferWithMime: (mime: string, buffer: Buffer, callback: (err: Error | null, text: string) => void) => void;
-  }
+  textract: unknown
 ): Promise<string> {
-  return new Promise((res, rej) =>
-    textract.fromBufferWithMime(mime, buffer, (err: Error | null, text: string) =>
-      err ? rej(err) : res(text),
-    ),
-  );
+  return extractViaOfficeParser(buffer);
 }
 
 /**

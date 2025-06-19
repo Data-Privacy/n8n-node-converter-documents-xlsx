@@ -1,9 +1,12 @@
 /**
- * Извлекает текст из буфера с помощью textract
+ * Извлекает текст из буфера с помощью officeparser
  */
-export declare function extractViaTextract(buffer: Buffer, mime: string, textract: {
-    fromBufferWithMime: (mime: string, buffer: Buffer, callback: (err: Error | null, text: string) => void) => void;
-}): Promise<string>;
+export declare function extractViaOfficeParser(buffer: Buffer): Promise<string>;
+/**
+ * @deprecated Устаревшая функция для обратной совместимости
+ * Используйте extractViaOfficeParser вместо этой функции
+ */
+export declare function extractViaTextract(buffer: Buffer, mime: string, textract: unknown): Promise<string>;
 /**
  * Ограничивает количество строк в Excel-таблице
  */

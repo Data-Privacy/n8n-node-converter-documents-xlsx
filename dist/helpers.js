@@ -1,13 +1,22 @@
 "use strict";
-// Вспомогательные функции для работы с файлами в кастомном ноде n8n
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.extractViaOfficeParser = extractViaOfficeParser;
 exports.extractViaTextract = extractViaTextract;
 exports.limitExcelSheet = limitExcelSheet;
+// Вспомогательные функции для работы с файлами в кастомном ноде n8n
+const officeparser_1 = require("officeparser");
 /**
- * Извлекает текст из буфера с помощью textract
+ * Извлекает текст из буфера с помощью officeparser
+ */
+function extractViaOfficeParser(buffer) {
+    return (0, officeparser_1.parseOfficeAsync)(buffer);
+}
+/**
+ * @deprecated Устаревшая функция для обратной совместимости
+ * Используйте extractViaOfficeParser вместо этой функции
  */
 function extractViaTextract(buffer, mime, textract) {
-    return new Promise((res, rej) => textract.fromBufferWithMime(mime, buffer, (err, text) => err ? rej(err) : res(text)));
+    return extractViaOfficeParser(buffer);
 }
 /**
  * Ограничивает количество строк в Excel-таблице

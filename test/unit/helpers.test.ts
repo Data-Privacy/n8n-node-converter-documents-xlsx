@@ -1,6 +1,18 @@
-import { extractViaTextract, limitExcelSheet } from '../../src/helpers';
+import { extractViaTextract, extractViaOfficeParser, limitExcelSheet } from '../../src/helpers';
+
+// Mock officeparser module
+jest.mock('officeparser', () => ({
+  parseOfficeAsync: jest.fn()
+}));
+
+import { parseOfficeAsync } from 'officeparser';
+const mockParseOfficeAsync = parseOfficeAsync as jest.MockedFunction<typeof parseOfficeAsync>;
 
 describe('helpers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('limitExcelSheet', () => {
     it('should return sheet as is if under limit', () => {
       const testData = [{ name: 'test1' }, { name: 'test2' }];
@@ -32,37 +44,49 @@ describe('helpers', () => {
     });
   });
 
-  describe('extractViaTextract', () => {
+  describe('extractViaOfficeParser', () => {
     it('should extract text successfully', async () => {
-      const mockTextract = {
-        fromBufferWithMime: jest.fn((mime, buffer, callback) => {
-          callback(null, 'extracted text');
-        })
-      };
+      const expectedText = 'extracted text from office file';
+      mockParseOfficeAsync.mockResolvedValue(expectedText);
 
-      const buffer = Buffer.from('test content');
-      const result = await extractViaTextract(buffer, 'text/plain', mockTextract);
+      const buffer = Buffer.from('mock office file content');
+      const result = await extractViaOfficeParser(buffer);
 
-      expect(result).toBe('extracted text');
-      expect(mockTextract.fromBufferWithMime).toHaveBeenCalledWith(
-        'text/plain', 
-        buffer, 
-        expect.any(Function)
-      );
+      expect(result).toBe(expectedText);
+      expect(mockParseOfficeAsync).toHaveBeenCalledWith(buffer);
     });
 
-    it('should reject on textract error', async () => {
-      const mockError = new Error('Extraction failed');
-      const mockTextract = {
-        fromBufferWithMime: jest.fn((mime, buffer, callback) => {
-          callback(mockError, null);
-        })
-      };
+    it('should reject on officeparser error', async () => {
+      const mockError = new Error('OfficeParser extraction failed');
+      mockParseOfficeAsync.mockRejectedValue(mockError);
 
-      const buffer = Buffer.from('test content');
+      const buffer = Buffer.from('invalid office file content');
       
-      await expect(extractViaTextract(buffer, 'text/plain', mockTextract))
-        .rejects.toThrow('Extraction failed');
+      await expect(extractViaOfficeParser(buffer))
+        .rejects.toThrow('OfficeParser extraction failed');
+    });
+  });
+
+  describe('extractViaTextract (deprecated)', () => {
+    it('should use extractViaOfficeParser under the hood', async () => {
+      const expectedText = 'text from deprecated function';
+      mockParseOfficeAsync.mockResolvedValue(expectedText);
+
+      const buffer = Buffer.from('mock file content');
+      const result = await extractViaTextract(buffer, 'text/plain', {});
+
+      expect(result).toBe(expectedText);
+      expect(mockParseOfficeAsync).toHaveBeenCalledWith(buffer);
+    });
+
+    it('should reject on officeparser error', async () => {
+      const mockError = new Error('OfficeParser error');
+      mockParseOfficeAsync.mockRejectedValue(mockError);
+
+      const buffer = Buffer.from('invalid content');
+      
+      await expect(extractViaTextract(buffer, 'text/plain', {}))
+        .rejects.toThrow('OfficeParser error');
     });
   });
 }); 

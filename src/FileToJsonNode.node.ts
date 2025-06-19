@@ -9,7 +9,6 @@
 
 import { parseStringPromise } from "xml2js";
 import mammoth from "mammoth";
-import textract from "textract";
 import * as ExcelJS from "exceljs";
 import pdfParse from "pdf-parse";
 import * as cheerio from "cheerio";
@@ -17,7 +16,7 @@ import { fileTypeFromBuffer } from "file-type";
 import chardet from "chardet";
 import iconv from "iconv-lite";
 import path from "path";
-import { extractViaTextract, limitExcelSheet } from "./helpers";
+import { extractViaOfficeParser, limitExcelSheet } from "./helpers";
 import {
   FileTypeError,
   FileTooLargeError,
@@ -152,7 +151,7 @@ function numberToColumn(num: number): string {
 // Стратегии обработки форматов
 const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<JsonResult>>> = {
   doc: async (buf) => ({
-    text: await extractViaTextract(buf, "application/msword", textract),
+    text: await extractViaOfficeParser(buf),
   }),
   docx: async (buf) => {
     const result = await mammoth.extractRawText({ buffer: buf });
@@ -224,10 +223,10 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     return { text: iconv.decode(buf, encoding) };
   },
   ppt: async (buf) => ({
-    text: await extractViaTextract(buf, "application/vnd.ms-powerpoint", textract),
+    text: await extractViaOfficeParser(buf),
   }),
   pptx: async (buf) => ({
-    text: await extractViaTextract(buf, "application/vnd.openxmlformats-officedocument.presentationml.presentation", textract),
+    text: await extractViaOfficeParser(buf),
   }),
   html: async (buf) => processHtml(buf),
   htm: async (buf) => processHtml(buf),

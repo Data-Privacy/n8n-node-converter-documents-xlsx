@@ -27,8 +27,9 @@
 
 - **xml2js** — для разбора XML
 - **mammoth** — для извлечения текста из DOCX
-- **textract** — для DOC, PPT, PPTX
-- **xlsx** — для XLS, XLSX, CSV
+- **officeparser** — для DOC, PPT, PPTX (современная замена textract)
+- **ExcelJS** — для XLS, XLSX (современная замена xlsx)
+- **papaparse** — для CSV
 - **pdf-parse** — для PDF
 - **cheerio** — для HTML/HTM
 - **sanitize-html** — для очистки HTML/HTM
