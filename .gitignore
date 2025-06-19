@@ -31,3 +31,5 @@ coverage/
 # Misc
 *.log
 *.tmp 
+# Prevent webpack artifacts
+bundle/*[0-9]*.FileToJsonNode.node.js
