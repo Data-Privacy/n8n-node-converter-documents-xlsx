@@ -13,6 +13,13 @@ webpack.config.js
 # Скрипт для создания standalone версии
 create-standalone.js
 
+# Документация разработки
+audit.md
+CHANGELOG.md
+CONTRIBUTING.md
+SOLUTION.md
+FIX-COMMUNITY-NODE.md
+
 # Тесты и тестовые файлы
 test/
 *.test.ts
@@ -35,11 +42,6 @@ eslint.config.mjs
 .gitlab-ci.yml
 .travis.yml
 .circleci/
-
-# Документация разработки
-audit.md
-CHANGELOG.md
-CONTRIBUTING.md
 
 # Редакторы и IDE
 .vscode/
