@@ -10,7 +10,7 @@
 import { parseStringPromise } from "xml2js";
 import mammoth from "mammoth";
 import textract from "textract";
-import xlsx from "xlsx";
+import * as ExcelJS from "exceljs";
 import pdfParse from "pdf-parse";
 import * as cheerio from "cheerio";
 import { fileTypeFromBuffer } from "file-type";
@@ -136,6 +136,19 @@ async function streamTxtStrategy(buf: Buffer): Promise<Partial<JsonResult>> {
   });
 }
 
+/**
+ * Конвертация номера колонки в букву (A, B, C...)
+ */
+function numberToColumn(num: number): string {
+  let result = '';
+  while (num > 0) {
+    num--; // Делаем 0-based
+    result = String.fromCharCode(65 + (num % 26)) + result;
+    num = Math.floor(num / 26);
+  }
+  return result;
+}
+
 // Стратегии обработки форматов
 const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<JsonResult>>> = {
   doc: async (buf) => ({
@@ -150,21 +163,43 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     return { text: JSON.stringify(parsed, null, 2) };
   },
   xls: async (buf) => {
-    const wb = xlsx.read(buf, { type: "buffer" });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buf);
     const sheets: Record<string, unknown[]> = {};
-    wb.SheetNames.forEach((sheetName) => {
-      const sheet = wb.Sheets[sheetName];
-      const jsonData = xlsx.utils.sheet_to_json(sheet);
+    workbook.eachSheet((worksheet, sheetId) => {
+      const sheetName = worksheet.name;
+      const jsonData: unknown[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        const rowData: Record<string, unknown> = {};
+        row.eachCell((cell, colNumber) => {
+          const columnLetter = numberToColumn(colNumber - 1);
+          rowData[columnLetter] = cell.value;
+        });
+        if (Object.keys(rowData).length > 0) {
+          jsonData.push(rowData);
+        }
+      });
       sheets[sheetName] = limitExcelSheet(jsonData);
     });
     return { sheets };
   },
   xlsx: async (buf) => {
-    const wb = xlsx.read(buf, { type: "buffer" });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buf);
     const sheets: Record<string, unknown[]> = {};
-    wb.SheetNames.forEach((sheetName) => {
-      const sheet = wb.Sheets[sheetName];
-      const jsonData = xlsx.utils.sheet_to_json(sheet);
+    workbook.eachSheet((worksheet, sheetId) => {
+      const sheetName = worksheet.name;
+      const jsonData: unknown[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        const rowData: Record<string, unknown> = {};
+        row.eachCell((cell, colNumber) => {
+          const columnLetter = numberToColumn(colNumber - 1);
+          rowData[columnLetter] = cell.value;
+        });
+        if (Object.keys(rowData).length > 0) {
+          jsonData.push(rowData);
+        }
+      });
       sheets[sheetName] = limitExcelSheet(jsonData);
     });
     return { sheets };
@@ -226,18 +261,31 @@ async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
 }
 
 async function processExcel(data: Buffer | string, ext: string): Promise<Partial<JsonResult>> {
-  const wb =
-    ext === "csv"
-      ? xlsx.read(data, { type: "string", cellDates: true })
-      : xlsx.read(data, { type: "buffer", cellDates: true });
+  const workbook = new ExcelJS.Workbook();
+  
+  if (ext === "csv") {
+    // Для CSV используем Papa Parse (уже реализовано в streamCsvStrategy)
+    return streamCsvStrategy(data as string);
+  } else {
+    // Для Excel файлов загружаем через ExcelJS
+    await workbook.xlsx.load(data as Buffer);
+  }
+  
   const sheets: Record<string, unknown[]> = {};
-  wb.SheetNames.forEach((s) => {
-    const js = xlsx.utils.sheet_to_json(wb.Sheets[s], {
-      defval: null,
-      raw: false,
-      dateNF: "yyyy-mm-dd",
+  workbook.eachSheet((worksheet, sheetId) => {
+    const sheetName = worksheet.name;
+    const jsonData: unknown[] = [];
+    worksheet.eachRow((row, rowNumber) => {
+      const rowData: Record<string, unknown> = {};
+      row.eachCell((cell, colNumber) => {
+        const columnLetter = numberToColumn(colNumber);
+        rowData[columnLetter] = cell.value;
+      });
+      if (Object.keys(rowData).length > 0) {
+        jsonData.push(rowData);
+      }
     });
-    sheets[s] = limitExcelSheet(js);
+    sheets[sheetName] = limitExcelSheet(jsonData);
   });
   return { sheets };
 }

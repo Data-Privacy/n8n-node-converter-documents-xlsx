@@ -35,6 +35,7 @@
   "dependencies": {
     "chardet": "^2.1.0",
     "cheerio": "^1.0.0",
+    "exceljs": "^4.4.0",
     "file-type": "^21.0.0",
     "iconv-lite": "^0.6.3",
     "mammoth": "^1.9.1",
@@ -42,7 +43,6 @@
     "pdf-parse": "^1.1.1",
     "sanitize-html": "^2.17.0",
     "textract": "^0.20.0",
-    "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
@@ -56,7 +56,6 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/sanitize-html": "^2.16.0",
     "@types/textract": "^2.4.5",
-    "@types/xlsx": "^0.0.35",
     "@types/xml2js": "^0.4.14",
     "audit-ci": "^7.1.0",
     "eslint": "^9.28.0",
