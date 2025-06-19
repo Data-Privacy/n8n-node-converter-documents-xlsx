@@ -161,24 +161,6 @@ const strategies = {
         const parsed = await (0, xml2js_1.parseStringPromise)(buf.toString("utf8"));
         return { text: JSON.stringify(parsed, null, 2) };
     },
-    xls: async (buf) => {
-        // XLS - старый бинарный формат Excel (CFB)
-        // ExcelJS поддерживает только XLSX, поэтому используем OfficeParser для извлечения текста
-        try {
-            const text = await (0, helpers_1.extractViaOfficeParser)(buf);
-            return {
-                text,
-                warning: "XLS файл обработан как текст. Для структурированных данных используйте XLSX формат."
-            };
-        }
-        catch (error) {
-            // Если OfficeParser не поддерживает XLS, возвращаем понятную ошибку
-            if (error instanceof Error && error.message.includes('cfb files')) {
-                throw new errors_1.ProcessingError(`XLS файлы (старый формат Excel) не поддерживаются. Пожалуйста, сохраните файл в формате XLSX или CSV.`);
-            }
-            throw new errors_1.ProcessingError(`Ошибка обработки XLS: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    },
     xlsx: async (buf) => {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buf);
@@ -243,7 +225,7 @@ async function streamCsvStrategy(data) {
             },
             complete: () => {
                 const warning = rowCount >= CSV_STREAM_ROW_LIMIT
-                    ? `CSV обрезан до ${CSV_STREAM_ROW_LIMIT} строк`
+                    ? `CSV truncated to ${CSV_STREAM_ROW_LIMIT} rows`
                     : undefined;
                 resolve({
                     sheets: { Sheet1: rows },
@@ -293,12 +275,12 @@ async function processHtml(buf) {
         return { text: cleanText };
     }
     catch (error) {
-        throw new errors_1.ProcessingError(`Ошибка обработки HTML: ${error instanceof Error ? error.message : String(error)}`);
+        throw new errors_1.ProcessingError(`HTML processing error: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 /**
- * Кастомный нод для n8n: конвертация файлов в JSON/текст
- * Поддержка DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
+ * Custom n8n node: convert files to JSON/text
+ * Supports DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
  */
 class FileToJsonNode {
     constructor() {
@@ -308,7 +290,7 @@ class FileToJsonNode {
             icon: "file:icon.svg",
             group: ["transform"],
             version: 5,
-            description: "DOC / DOCX / XML / XLS / XLSX / CSV / PDF / TXT / PPT / PPTX / HTML → JSON|text",
+            description: "DOC / DOCX / XML / XLSX / CSV / PDF / TXT / PPT / PPTX / HTML → JSON|text",
             defaults: { name: "Convert File to JSON" },
             inputs: ["main"],
             outputs: ["main"],
@@ -318,14 +300,14 @@ class FileToJsonNode {
                     name: "binaryPropertyName",
                     type: "string",
                     default: "data",
-                    description: "Имя поля, в котором лежит бинарный файл",
+                    description: "Name of the binary property that contains the file",
                 },
                 {
                     displayName: "Max File Size (MB)",
                     name: "maxFileSize",
                     type: "number",
                     default: 50,
-                    description: "Максимальный размер файла в мегабайтах",
+                    description: "Maximum file size in megabytes",
                     typeOptions: {
                         minValue: 1,
                         maxValue: 100
@@ -336,7 +318,7 @@ class FileToJsonNode {
                     name: "maxConcurrency",
                     type: "number",
                     default: 4,
-                    description: "Максимальное количество одновременно обрабатываемых файлов",
+                    description: "Maximum number of files processed concurrently",
                     typeOptions: {
                         minValue: 1,
                         maxValue: 10
@@ -346,7 +328,7 @@ class FileToJsonNode {
         };
     }
     /**
-     * Основной метод выполнения нода n8n
+     * Main execution method for n8n node
      */
     async execute() {
         const items = this.getInputData();
@@ -354,7 +336,6 @@ class FileToJsonNode {
             "doc",
             "docx",
             "xml",
-            "xls",
             "xlsx",
             "csv",
             "pdf",
@@ -368,24 +349,24 @@ class FileToJsonNode {
         const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4);
         const processItem = async (item, i) => {
             const prop = this.getNodeParameter("binaryPropertyName", i, "data");
-            // --- Валидация входных данных ---
+            // --- Input data validation ---
             if (!item || typeof item !== "object")
-                throw new errors_1.FileTypeError(`Item #${i} не является объектом`);
+                throw new errors_1.FileTypeError(`Item #${i} is not an object`);
             const itemObj = item;
             if (!itemObj.binary || typeof itemObj.binary !== "object")
-                throw new errors_1.FileTypeError(`Item #${i} не содержит binary-данных`);
+                throw new errors_1.FileTypeError(`Item #${i} does not contain binary data`);
             const binary = itemObj.binary;
             if (!binary[prop])
-                throw new errors_1.FileTypeError(`Binary property "${prop}" отсутствует (item ${i})`);
+                throw new errors_1.FileTypeError(`Binary property "${prop}" is missing (item ${i})`);
             const binaryProp = binary[prop];
             if (!binaryProp.fileName || typeof binaryProp.fileName !== "string")
-                throw new errors_1.FileTypeError(`Файл не содержит корректного имени (item ${i})`);
+                throw new errors_1.FileTypeError(`File does not contain a valid name (item ${i})`);
             const buf = await this.helpers.getBinaryDataBuffer(i, prop);
             if (!Buffer.isBuffer(buf) || buf.length === 0)
-                throw new errors_1.EmptyFileError("Файл пуст или не содержит данных");
+                throw new errors_1.EmptyFileError("File is empty or contains no data");
             if (buf.length > maxFileSize)
-                throw new errors_1.FileTooLargeError("Файл слишком большой (максимум 50 MB)");
-            // --- Конец валидации ---
+                throw new errors_1.FileTooLargeError("File is too large (maximum 50 MB)");
+            // --- End of validation ---
             const name = sanitizeFileName(binaryProp.fileName ?? "");
             let ext = path_1.default.extname(name).slice(1).toLowerCase();
             /* ── autodetect ── */
@@ -396,7 +377,7 @@ class FileToJsonNode {
                         ext = ft.ext;
                     }
                     else {
-                        throw new errors_1.UnsupportedFormatError(`Неподдерживаемый тип файла: ${ext || "unknown"}`);
+                        throw new errors_1.UnsupportedFormatError(`Unsupported file type: ${ext || "unknown"}`);
                     }
                 }
                 catch (error) {
@@ -404,7 +385,7 @@ class FileToJsonNode {
                         fileName: name,
                         error: error instanceof Error ? error.message : String(error)
                     });
-                    throw new errors_1.UnsupportedFormatError(`Неподдерживаемый тип файла: ${ext || "unknown"}`);
+                    throw new errors_1.UnsupportedFormatError(`Unsupported file type: ${ext || "unknown"}`);
                 }
             }
             this.logger?.info("ConvertFileToJSON →", {
@@ -416,12 +397,12 @@ class FileToJsonNode {
             const startTime = performance.now();
             try {
                 if (!strategies[ext]) {
-                    throw new errors_1.UnsupportedFormatError(`Формат "${ext}" не поддерживается`);
+                    throw new errors_1.UnsupportedFormatError(`Format "${ext}" is not supported`);
                 }
                 json = await strategies[ext](buf, ext);
             }
             catch (e) {
-                throw new errors_1.ProcessingError(`Ошибка обработки ${ext.toUpperCase()}: ${e.message}`);
+                throw new errors_1.ProcessingError(`${ext.toUpperCase()} processing error: ${e.message}`);
             }
             const processingTime = performance.now() - startTime;
             this.logger?.info('Processing completed', {
@@ -432,7 +413,7 @@ class FileToJsonNode {
             });
             if ("text" in json &&
                 (!json.text || json.text.trim().length === 0))
-                throw new errors_1.EmptyFileError("Файл пуст или не содержит текста");
+                throw new errors_1.EmptyFileError("File is empty or contains no text");
             json.metadata = {
                 fileName: sanitizeFileName(name) || null,
                 fileSize: buf.length,
