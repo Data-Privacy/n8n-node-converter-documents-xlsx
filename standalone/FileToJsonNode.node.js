@@ -162,13 +162,20 @@ const strategies = {
         return { text: JSON.stringify(parsed, null, 2) };
     },
     xls: async (buf) => {
-        // XLS - старый бинарный формат Excel, используем officeparser для извлечения текста
-        // так как ExcelJS.xlsx.load() работает только с новым XLSX форматом (ZIP)
+        // XLS - старый бинарный формат Excel (CFB)
+        // ExcelJS поддерживает только XLSX, поэтому используем OfficeParser для извлечения текста
         try {
             const text = await (0, helpers_1.extractViaOfficeParser)(buf);
-            return { text };
+            return {
+                text,
+                warning: "XLS файл обработан как текст. Для структурированных данных используйте XLSX формат."
+            };
         }
         catch (error) {
+            // Если OfficeParser не поддерживает XLS, возвращаем понятную ошибку
+            if (error instanceof Error && error.message.includes('cfb files')) {
+                throw new errors_1.ProcessingError(`XLS файлы (старый формат Excel) не поддерживаются. Пожалуйста, сохраните файл в формате XLSX или CSV.`);
+            }
             throw new errors_1.ProcessingError(`Ошибка обработки XLS: ${error instanceof Error ? error.message : String(error)}`);
         }
     },

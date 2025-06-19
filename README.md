@@ -1,64 +1,64 @@
 # n8n-node-converter-documents
 
-## Описание
+## Description
 
-Этот проект представляет собой кастомный нод для n8n, предназначенный для конвертации различных файловых форматов в JSON или текстовый вид. Поддерживаются следующие форматы: DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM.
+This project is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM.
 
-## Важно: ограничения по большим файлам
+## Important: Large File Limitations
 
-- **PDF, XLS, XLSX:** используемые библиотеки (`pdf-parse`, `ExcelJS`) загружают весь файл в память. При обработке очень больших файлов (десятки мегабайт, сотни тысяч строк) возможны сбои, зависания и превышение лимита памяти. Для таких случаев рекомендуется предварительно разбивать файлы или использовать специализированные инструменты.
-- **CSV, TXT:** реализована потоковая обработка для больших файлов (через papaparse и readline).
+- **PDF, XLSX:** The libraries used (`pdf-parse`, `ExcelJS`) load the entire file into memory. When processing very large files (tens of megabytes, hundreds of thousands of rows), crashes, freezes, and memory limit exceeded errors are possible. For such cases, it's recommended to split files beforehand or use specialized tools.
+- **CSV, TXT:** Stream processing is implemented for large files (via papaparse and readline).
 
-## Безопасность и валидация
+## Security and Validation
 
-- Входные данные проходят строгую валидацию (тип, структура, размер, наличие бинарных данных).
-- Для HTML/HTM используется sanitize-html для защиты от XSS и вредоносных скриптов.
-- **Обновления безопасности:** Заменены уязвимые библиотеки на безопасные аналоги (textract → officeparser).
-- Регулярные проверки зависимостей с помощью npm audit и audit-ci.
+- Input data undergoes strict validation (type, structure, size, presence of binary data).
+- For HTML/HTM, sanitize-html is used to protect against XSS and malicious scripts.
+- **Security updates:** Replaced vulnerable libraries with secure alternatives (textract → officeparser).
+- Regular dependency checks using npm audit and audit-ci.
 
-## Возможности
+## Features
 
-- Автоматическое определение типа файла по расширению или содержимому
-- Извлечение текста или таблиц из популярных офисных и текстовых форматов
-- Выходные данные: `{ text: "..." }` или `{ sheets: {...} }` + метаданные (имя, размер, тип файла, время обработки)
-- Обработка больших файлов (до 50 МБ для большинства форматов)
-- Сообщения о пустых или неподдерживаемых файлах
-- Защита от вредоносных данных и XSS
+- Automatic file type detection by extension or content
+- Text or table extraction from popular office and text formats
+- Output data: `{ text: "..." }` or `{ sheets: {...} }` + metadata (name, size, file type, processing time)
+- Large file processing (up to 50 MB for most formats)
+- Messages for empty or unsupported files
+- Protection against malicious data and XSS
 
-## Используемые библиотеки
+## Libraries Used
 
-- **xml2js** — для разбора XML
-- **mammoth** — для извлечения текста из DOCX
-- **officeparser** — для DOC, PPT, PPTX (безопасная современная библиотека)
-- **ExcelJS** — для XLS, XLSX (современная и безопасная библиотека)
-- **papaparse** — для CSV с поддержкой потоковой обработки
-- **pdf-parse** — для PDF
-- **cheerio** — для HTML/HTM
-- **sanitize-html** — для очистки HTML/HTM от XSS
-- **file-type** — для определения типа файла по содержимому
-- **chardet** + **iconv-lite** — для определения и декодирования кодировки TXT
+- **xml2js** — for XML parsing
+- **mammoth** — for extracting text from DOCX
+- **officeparser** — for DOC, PPT, PPTX (secure modern library)
+- **ExcelJS** — for XLSX (modern and secure library)
+- **papaparse** — for CSV with streaming support
+- **pdf-parse** — for PDF
+- **cheerio** — for HTML/HTM
+- **sanitize-html** — for cleaning HTML/HTM from XSS
+- **file-type** — for file type detection by content
+- **chardet** + **iconv-lite** — for encoding detection and decoding of TXT
 
-## CI/CD и качество кода
+## CI/CD and Code Quality
 
-- **GitHub Actions:** автоматическое тестирование на Node.js 18.x и 20.x
-- **Линтинг:** ESLint с TypeScript поддержкой
-- **Тестирование:** Jest с покрытием кода
-- **Безопасность:** автоматические проверки уязвимостей
-- **Сборка:** TypeScript компиляция с проверкой типов
+- **GitHub Actions:** automatic testing on Node.js 18.x and 20.x
+- **Linting:** ESLint with TypeScript support
+- **Testing:** Jest with code coverage
+- **Security:** automatic vulnerability checks
+- **Build:** TypeScript compilation with type checking
 
-## Примеры входных и выходных данных
+## Input and Output Data Examples
 
-**Вход:**
+**Input:**
 
-- Бинарный файл (например, DOCX, PDF, XLSX и др.) в поле `data`.
+- Binary file (e.g., DOCX, PDF, XLSX, etc.) in the `data` field.
 
-**Выход:**
+**Output:**
 
-- Для текстовых форматов:
+- For text formats:
 
 ```json
 {
-  "text": "Извлечённый текст...",
+  "text": "Extracted text...",
   "metadata": {
     "fileName": "example.docx",
     "fileSize": 12345,
@@ -68,12 +68,12 @@
 }
 ```
 
-- Для табличных форматов:
+- For tabular formats:
 
 ```json
 {
   "sheets": {
-    "Sheet1": [ { "A": "Значение1", "B": "Значение2" }, ... ]
+    "Sheet1": [ { "A": "Value1", "B": "Value2" }, ... ]
   },
   "metadata": {
     "fileName": "example.xlsx",
@@ -84,85 +84,85 @@
 }
 ```
 
-## Структура проекта
+## Project Structure
 
-- `src/` — папка для исходного кода (основная логика)
-- `helpers.ts` — вспомогательные функции
-- `errors.ts` — кастомные классы ошибок
-- `test/` — папка для тестовых файлов и юнит-тестов
-- `package.json` — файл зависимостей и скриптов
-- `.github/workflows/` — CI/CD конфигурация
-- `.gitignore` — исключает node_modules, dist и временные файлы из git
+- `src/` — source code folder (main logic)
+- `helpers.ts` — helper functions
+- `errors.ts` — custom error classes
+- `test/` — test files and unit tests folder
+- `package.json` — dependencies and scripts file
+- `.github/workflows/` — CI/CD configuration
+- `.gitignore` — excludes node_modules, dist and temporary files from git
 
-## Установка зависимостей
+## Installing Dependencies
 
-Все необходимые зависимости устанавливаются через npm:
+All necessary dependencies are installed via npm:
 
 ```bash
 npm install
 ```
 
-## Разработка
+## Development
 
 ```bash
-# Установка зависимостей
+# Install dependencies
 npm install
 
-# Сборка проекта
+# Build project
 npm run build
 
-# Запуск тестов
+# Run tests
 npm test
 
-# Тесты с покрытием
+# Tests with coverage
 npm run test:coverage
 
-# Линтинг
+# Linting
 npm run lint
 
-# Исправление линтинга
+# Fix linting
 npm run lint:fix
 
-# Разработка с автоматической пересборкой
+# Development with automatic rebuild
 npm run dev
 ```
 
-## Рекомендации
+## Recommendations
 
-- Для добавления новых форматов потребуется добавить соответствующую библиотеку и обработчик в основной файл.
-- Для интеграции в n8n убедитесь, что нод корректно подключён к вашей системе.
-- Для работы с очень большими PDF, XLS, XLSX используйте предварительную обработку или сторонние инструменты.
-- Для безопасности всегда обновляйте зависимости и следите за актуальностью sanitize-html.
-- Регулярно проверяйте уязвимости с помощью `npm audit`.
+- To add new formats, you'll need to add the corresponding library and handler to the main file.
+- For n8n integration, make sure the node is correctly connected to your system.
+- For working with very large PDF, XLSX files, use preprocessing or third-party tools.
+- For security, always update dependencies and keep sanitize-html up to date.
+- Regularly check for vulnerabilities using `npm audit`.
 
-## Сборка и использование с TypeScript
+## Build and Use with TypeScript
 
-1. Для сборки проекта выполните:
+1. To build the project, run:
    ```bash
    npm run build
    ```
-   Итоговые файлы появятся в папке `dist/`.
-2. Для использования кастомного нода в n8n укажите путь к `dist/FileToJsonNode.node.js`.
-3. Основной файл для n8n теперь: `dist/FileToJsonNode.node.js` (см. поле `main` в package.json).
+   The resulting files will appear in the `dist/` folder.
+2. To use the custom node in n8n, specify the path to `dist/FileToJsonNode.node.js`.
+3. Main file for n8n is now: `dist/FileToJsonNode.node.js` (see `main` field in package.json).
 
-## 🚀 Для использования в n8n:
+## 🚀 For use in n8n:
 
-### Вариант 1: Установка как npm пакет (рекомендуется)
+### Option 1: Install as npm package (recommended)
 
-**Обновление v1.0.4**: Исправлена проблема "The specified package does not contain any nodes" ✅
+**Update v1.0.7**: Fixed XLS processing issues and improved error messages ✅
 
 ```bash
 npm install @mazix/n8n-nodes-converter-documents
 ```
 
-Или через веб-интерфейс n8n:
-1. Откройте Settings → Community nodes
-2. Введите: `@mazix/n8n-nodes-converter-documents`
-3. Нажмите Install
+Or via n8n web interface:
+1. Open Settings → Community nodes
+2. Enter: `@mazix/n8n-nodes-converter-documents`
+3. Click Install
 
-### Вариант 2: Standalone версия (самый простой способ)
+### Option 2: Standalone version (easiest way)
 
-1. **Создайте standalone версию:**
+1. **Create standalone version:**
    ```bash
    git clone https://github.com/mazix/n8n-node-converter-documents.git
    cd n8n-node-converter-documents
@@ -170,66 +170,74 @@ npm install @mazix/n8n-nodes-converter-documents
    npm run standalone
    ```
 
-2. **Скопируйте в n8n:**
+2. **Copy to n8n:**
    ```bash
    cp -r ./standalone ~/.n8n/custom-nodes/n8n-node-converter-documents
    cd ~/.n8n/custom-nodes/n8n-node-converter-documents
    npm install
    ```
 
-3. **Перезапустите n8n**
+3. **Restart n8n**
 
-### Вариант 3: Ручная установка
+### Option 3: Manual installation
 
-1. **Скопируйте файлы в папку custom nodes:**
+1. **Copy files to custom nodes folder:**
    ```bash
    mkdir -p ~/.n8n/custom-nodes/n8n-node-converter-documents
    cp dist/* ~/.n8n/custom-nodes/n8n-node-converter-documents/
    cp package.json ~/.n8n/custom-nodes/n8n-node-converter-documents/
    ```
 
-2. **Установите зависимости в папке custom node:**
+2. **Install dependencies in custom node folder:**
    ```bash
    cd ~/.n8n/custom-nodes/n8n-node-converter-documents
    npm install --production
    ```
 
-3. **Перезапустите n8n**
+3. **Restart n8n**
 
-### Вариант 4: Глобальная установка зависимостей
+### Option 4: Global dependency installation
 
-Если у вас есть права администратора, можно установить зависимости глобально:
+If you have administrator rights, you can install dependencies globally:
 
 ```bash
 npm install -g chardet cheerio exceljs file-type iconv-lite mammoth officeparser papaparse pdf-parse sanitize-html xml2js
 ```
 
-Затем скопируйте только основной файл ноды:
+Then copy only the main node file:
 ```bash
 cp dist/FileToJsonNode.node.js ~/.n8n/custom-nodes/
 ```
 
-## ⚠️ Решение проблем
+## ⚠️ Troubleshooting
 
-Если вы видите ошибку `Cannot find module 'exceljs'` (или другие модули):
+If you see an error `Cannot find module 'exceljs'` (or other modules):
 
-1. **Используйте standalone версию** - это самый надежный способ
-2. Убедитесь что зависимости установлены в правильной папке
-3. Проверьте права доступа к папке ~/.n8n/custom-nodes/
-4. Используйте вариант с npm пакетом вместо custom nodes
+1. **Use standalone version** - this is the most reliable method
+2. Make sure dependencies are installed in the correct folder
+3. Check access permissions to ~/.n8n/custom-nodes/ folder
+4. Use npm package option instead of custom nodes
 
-### Проверка установки
+### Installation Check
 
-После установки вы можете проверить что нода работает:
+After installation, you can verify the node is working:
 ```bash
-# Проверьте что файлы скопированы
+# Check that files are copied
 ls -la ~/.n8n/custom-nodes/n8n-node-converter-documents/
 
-# Проверьте что зависимости установлены
+# Check that dependencies are installed
 cd ~/.n8n/custom-nodes/n8n-node-converter-documents/
 npm list
 ```
 
+## Supported File Formats
+
+- **Text formats:** DOC, DOCX, TXT, PDF
+- **Spreadsheet formats:** XLSX, CSV *(XLS is not supported - please convert to XLSX)*
+- **Presentation formats:** PPT, PPTX
+- **Web formats:** HTML, HTM
+- **Data formats:** XML
+
 ---
 
-Если потребуется документация по какому-либо модулю или помощь с интеграцией — обращайтесь!
+If you need documentation for any module or help with integration — feel free to ask!

@@ -1,7 +1,7 @@
 import { IExecuteFunctions } from 'n8n-workflow';
 /**
- * Кастомный нод для n8n: конвертация файлов в JSON/текст
- * Поддержка DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
+ * Custom n8n node: convert files to JSON/text
+ * Supports DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
  */
 declare class FileToJsonNode {
     description: {
@@ -36,7 +36,7 @@ declare class FileToJsonNode {
         })[];
     };
     /**
-     * Основной метод выполнения нода n8n
+     * Main execution method for n8n node
      */
     execute(this: IExecuteFunctions): Promise<unknown[]>;
 }
