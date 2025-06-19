@@ -1,7 +1,7 @@
 {
   "name": "@mazix/n8n-nodes-converter-documents",
   "version": "1.0.3",
-  "description": "",
+  "description": "n8n node to convert various document formats (DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM) to JSON or text format",
   "main": "dist/FileToJsonNode.node.js",
   "scripts": {
     "build": "tsc",
@@ -27,7 +27,19 @@
     "type": "git",
     "url": "git+https://github.com/mazixs/n8n-node-converter-documents.git"
   },
-  "keywords": [],
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "document-converter",
+    "file-converter",
+    "pdf",
+    "excel",
+    "word",
+    "powerpoint",
+    "csv",
+    "xml",
+    "html"
+  ],
   "author": "mazix",
   "license": "MIT",
   "type": "commonjs",
@@ -76,5 +88,14 @@
     "util": "^0.12.5",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/FileToJsonNode.node.js"
+    ]
   }
 }
