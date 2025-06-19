@@ -48,7 +48,6 @@
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@types/chardet": "^0.8.3",
-    "@types/cheerio": "^0.22.35",
     "@types/iconv-lite": "^0.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.15.29",
