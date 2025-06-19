@@ -1,6 +1,18 @@
 # Исходный код TypeScript (не нужен в production)
 src/
 
+# Bundle файлы webpack (не используются)
+bundle/
+
+# Standalone версия (создается отдельно)
+standalone/
+
+# Конфигурация webpack
+webpack.config.js
+
+# Скрипт для создания standalone версии
+create-standalone.js
+
 # Тесты и тестовые файлы
 test/
 *.test.ts
@@ -72,7 +84,6 @@ logs/
 .prettierrc*
 .prettierignore
 
-# Исключаем все, кроме необходимого для n8n
 # В пакет попадут только:
 # - dist/ (скомпилированные JS и .d.ts файлы)
 # - package.json

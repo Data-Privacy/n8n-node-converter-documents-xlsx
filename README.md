@@ -145,6 +145,83 @@ npm run dev
 2. Для использования кастомного нода в n8n укажите путь к `dist/FileToJsonNode.node.js`.
 3. Основной файл для n8n теперь: `dist/FileToJsonNode.node.js` (см. поле `main` в package.json).
 
+## 🚀 Для использования в n8n:
+
+### Вариант 1: Установка как npm пакет (рекомендуется)
+```bash
+npm install @mazix/n8n-nodes-converter-documents
+```
+
+### Вариант 2: Standalone версия (самый простой способ)
+
+1. **Создайте standalone версию:**
+   ```bash
+   git clone https://github.com/mazix/n8n-node-converter-documents.git
+   cd n8n-node-converter-documents
+   npm install
+   npm run standalone
+   ```
+
+2. **Скопируйте в n8n:**
+   ```bash
+   cp -r ./standalone ~/.n8n/custom-nodes/n8n-node-converter-documents
+   cd ~/.n8n/custom-nodes/n8n-node-converter-documents
+   npm install
+   ```
+
+3. **Перезапустите n8n**
+
+### Вариант 3: Ручная установка
+
+1. **Скопируйте файлы в папку custom nodes:**
+   ```bash
+   mkdir -p ~/.n8n/custom-nodes/n8n-node-converter-documents
+   cp dist/* ~/.n8n/custom-nodes/n8n-node-converter-documents/
+   cp package.json ~/.n8n/custom-nodes/n8n-node-converter-documents/
+   ```
+
+2. **Установите зависимости в папке custom node:**
+   ```bash
+   cd ~/.n8n/custom-nodes/n8n-node-converter-documents
+   npm install --production
+   ```
+
+3. **Перезапустите n8n**
+
+### Вариант 4: Глобальная установка зависимостей
+
+Если у вас есть права администратора, можно установить зависимости глобально:
+
+```bash
+npm install -g chardet cheerio exceljs file-type iconv-lite mammoth officeparser papaparse pdf-parse sanitize-html xml2js
+```
+
+Затем скопируйте только основной файл ноды:
+```bash
+cp dist/FileToJsonNode.node.js ~/.n8n/custom-nodes/
+```
+
+## ⚠️ Решение проблем
+
+Если вы видите ошибку `Cannot find module 'exceljs'` (или другие модули):
+
+1. **Используйте standalone версию** - это самый надежный способ
+2. Убедитесь что зависимости установлены в правильной папке
+3. Проверьте права доступа к папке ~/.n8n/custom-nodes/
+4. Используйте вариант с npm пакетом вместо custom nodes
+
+### Проверка установки
+
+После установки вы можете проверить что нода работает:
+```bash
+# Проверьте что файлы скопированы
+ls -la ~/.n8n/custom-nodes/n8n-node-converter-documents/
+
+# Проверьте что зависимости установлены
+cd ~/.n8n/custom-nodes/n8n-node-converter-documents/
+npm list
+```
+
 ---
 
 Если потребуется документация по какому-либо модулю или помощь с интеграцией — обращайтесь!
