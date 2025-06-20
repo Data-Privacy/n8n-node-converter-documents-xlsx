@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────
  * Универсальный кастом-нод для n8n.
  * Поддерживает: DOC, DOCX, XML, XLS, XLSX, CSV, PDF, TXT,
- *               PPT, PPTX, HTML / HTM.
+ *               PPT, PPTX, HTML / HTM, ODT, ODP, ODS, JSON.
  * Выход: { text: "..."} либо { sheets: {...} } + metadata.
  */
 
@@ -148,40 +148,159 @@ function numberToColumn(num: number): string {
   return result;
 }
 
+/**
+ * Функция для нормализации JSON объектов
+ * Преобразует многоуровневые структуры в плоский объект
+ */
+function flattenJsonObject(obj: unknown, prefix: string = '', result: Record<string, unknown> = {}): Record<string, unknown> {
+  if (obj === null || obj === undefined) {
+    return result;
+  }
+
+  if (typeof obj !== 'object' || obj instanceof Date || obj instanceof Buffer) {
+    result[prefix || 'value'] = obj;
+    return result;
+  }
+
+  if (Array.isArray(obj)) {
+    obj.forEach((item, index) => {
+      const key = prefix ? `${prefix}[${index}]` : `item_${index}`;
+      flattenJsonObject(item, key, result);
+    });
+    return result;
+  }
+
+  Object.keys(obj).forEach(key => {
+    const newKey = prefix ? `${prefix}.${key}` : key;
+    flattenJsonObject((obj as Record<string, unknown>)[key], newKey, result);
+  });
+
+  return result;
+}
+
 // Стратегии обработки форматов
 const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<JsonResult>>> = {
-  doc: async (buf) => ({
-    text: await extractViaOfficeParser(buf),
-  }),
+  doc: async (buf) => {
+    try {
+      // Проверяем, является ли это старым DOC файлом (CFB формат)
+      const signature = buf.slice(0, 8);
+      const cfbSignature = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+      
+      if (signature.equals(cfbSignature)) {
+        throw new UnsupportedFormatError(
+          "Старые DOC файлы (Word 97-2003) не поддерживаются. " +
+          "Пожалуйста, сохраните файл в формате DOCX (Word 2007+) и попробуйте снова."
+        );
+      }
+      
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      if (error instanceof UnsupportedFormatError) {
+        throw error;
+      }
+      
+      // Если это ошибка officeparser о CFB файлах, выдаем понятное сообщение
+      if (error instanceof Error && error.message.includes('cfb files')) {
+        throw new UnsupportedFormatError(
+          "Старые DOC файлы (Word 97-2003) не поддерживаются. " +
+          "Пожалуйста, сохраните файл в формате DOCX (Word 2007+) и попробуйте снова."
+        );
+      }
+      
+      throw new ProcessingError(`DOC processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
   docx: async (buf) => {
-    const result = await mammoth.extractRawText({ buffer: buf });
-    return { text: result.value };
+    // Используем officeparser вместо mammoth для единообразия
+    try {
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      // Fallback на mammoth если officeparser не справился
+      try {
+        const result = await mammoth.extractRawText({ buffer: buf });
+        return { text: result.value };
+      } catch {
+        throw new ProcessingError(`DOCX processing error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
   },
   xml: async (buf) => {
     const parsed = await parseStringPromise(buf.toString("utf8"));
     return { text: JSON.stringify(parsed, null, 2) };
   },
+  json: async (buf) => {
+    try {
+      const encoding = chardet.detect(buf) || "utf-8";
+      const jsonString = iconv.decode(buf, encoding);
+      const parsed = JSON.parse(jsonString);
+      
+      // Если это простой объект, нормализуем его
+      if (typeof parsed === 'object' && parsed !== null) {
+        const flattened = flattenJsonObject(parsed);
+        return { 
+          text: JSON.stringify(flattened, null, 2),
+          warning: Object.keys(flattened).length > Object.keys(parsed).length ? 
+            "Многоуровневая структура JSON была преобразована в плоский объект" : undefined
+        };
+      }
+      
+      // Если это массив или примитив, возвращаем как есть
+      return { text: JSON.stringify(parsed, null, 2) };
+    } catch (error) {
+      throw new ProcessingError(`JSON parsing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
+  odt: async (buf) => {
+    try {
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      throw new ProcessingError(`ODT processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
+  odp: async (buf) => {
+    try {
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      throw new ProcessingError(`ODP processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
+  ods: async (buf) => {
+    try {
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      throw new ProcessingError(`ODS processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
 
   xlsx: async (buf) => {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buf);
-    const sheets: Record<string, unknown[]> = {};
-    workbook.eachSheet((worksheet, _sheetId) => {
-      const sheetName = worksheet.name;
-      const jsonData: unknown[] = [];
-      worksheet.eachRow((row, _rowNumber) => {
-        const rowData: Record<string, unknown> = {};
-        row.eachCell((cell, colNumber) => {
-          const columnLetter = numberToColumn(colNumber - 1);
-          rowData[columnLetter] = cell.value;
+    // Пробуем сначала officeparser, затем ExcelJS как fallback
+    try {
+      const _text = await extractViaOfficeParser(buf);
+      // officeparser возвращает текст, но для Excel нам нужна структура
+      // Поэтому используем ExcelJS для полной функциональности
+      throw new Error("Use ExcelJS for structured data");
+    } catch {
+      // Используем ExcelJS для полной поддержки структуры Excel
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buf);
+      const sheets: Record<string, unknown[]> = {};
+      workbook.eachSheet((worksheet, _sheetId) => {
+        const sheetName = worksheet.name;
+        const jsonData: unknown[] = [];
+        worksheet.eachRow((row, _rowNumber) => {
+          const rowData: Record<string, unknown> = {};
+          row.eachCell((cell, colNumber) => {
+            const columnLetter = numberToColumn(colNumber - 1);
+            rowData[columnLetter] = cell.value;
+          });
+          if (Object.keys(rowData).length > 0) {
+            jsonData.push(rowData);
+          }
         });
-        if (Object.keys(rowData).length > 0) {
-          jsonData.push(rowData);
-        }
+        sheets[sheetName] = limitExcelSheet(jsonData);
       });
-      sheets[sheetName] = limitExcelSheet(jsonData);
-    });
-    return { sheets };
+      return { sheets };
+    }
   },
   csv: async (buf) => {
     const encoding = chardet.detect(buf) || "utf-8";
@@ -192,8 +311,18 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     return processExcel(decoded, "csv");
   },
   pdf: async (buf) => {
-    const data = await pdfParse(buf);
-    return { text: data.text };
+    // Используем officeparser вместо pdf-parse (officeparser использует pdf.js с 2024/05/06)
+    try {
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      // Fallback на pdf-parse если officeparser не справился
+      try {
+        const data = await pdfParse(buf);
+        return { text: data.text };
+      } catch {
+        throw new ProcessingError(`PDF processing error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
   },
   txt: async (buf) => {
     if (buf.length > TXT_STREAM_SIZE_LIMIT) {
@@ -202,9 +331,36 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     const encoding = chardet.detect(buf) || "utf-8";
     return { text: iconv.decode(buf, encoding) };
   },
-  ppt: async (buf) => ({
-    text: await extractViaOfficeParser(buf),
-  }),
+  ppt: async (buf) => {
+    try {
+      // Проверяем, является ли это старым PPT файлом (CFB формат)
+      const signature = buf.slice(0, 8);
+      const cfbSignature = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+      
+      if (signature.equals(cfbSignature)) {
+        throw new UnsupportedFormatError(
+          "Старые PPT файлы (PowerPoint 97-2003) не поддерживаются. " +
+          "Пожалуйста, сохраните файл в формате PPTX (PowerPoint 2007+) и попробуйте снова."
+        );
+      }
+      
+      return { text: await extractViaOfficeParser(buf) };
+    } catch (error) {
+      if (error instanceof UnsupportedFormatError) {
+        throw error;
+      }
+      
+      // Если это ошибка officeparser о CFB файлах, выдаем понятное сообщение
+      if (error instanceof Error && error.message.includes('cfb files')) {
+        throw new UnsupportedFormatError(
+          "Старые PPT файлы (PowerPoint 97-2003) не поддерживаются. " +
+          "Пожалуйста, сохраните файл в формате PPTX (PowerPoint 2007+) и попробуйте снова."
+        );
+      }
+      
+      throw new ProcessingError(`PPT processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
   pptx: async (buf) => ({
     text: await extractViaOfficeParser(buf),
   }),
@@ -285,7 +441,7 @@ async function processHtml(buf: Buffer): Promise<Partial<JsonResult>> {
 
 /**
  * Custom n8n node: convert files to JSON/text
- * Supports DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
+ * Supports DOCX, XML, XLSX, CSV, PDF, TXT, PPTX, HTML
  */
 class FileToJsonNode {
   description = {
@@ -295,7 +451,7 @@ class FileToJsonNode {
     group: ["transform"],
     version: 5,
     description:
-      "DOC / DOCX / XML / XLSX / CSV / PDF / TXT / PPT / PPTX / HTML → JSON|text",
+      "DOCX / XML / XLSX / CSV / PDF / TXT / PPTX / HTML → JSON|text",
     defaults: { name: "Convert File to JSON" },
     inputs: ["main"],
     outputs: ["main"],
@@ -345,7 +501,6 @@ class FileToJsonNode {
       "csv",
       "pdf",
       "txt",
-      "ppt",
       "pptx",
       "html",
       "htm",

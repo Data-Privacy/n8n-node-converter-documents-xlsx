@@ -13,15 +13,23 @@ webpack.config.js
 # Скрипт для создания standalone версии
 create-standalone.js
 
-# Документация разработки
+# Документация разработки (НЕ НУЖНА В PRODUCTION)
+docs/
 audit.md
 CHANGELOG.md
 CONTRIBUTING.md
 SOLUTION.md
 FIX-COMMUNITY-NODE.md
+clean_plan.md
+ocr_example.md
+optimization_plan.md
 
-# Тесты и тестовые файлы
+# Тесты и тестовые файлы (включая новые папки)
 test/
+test/unit/
+test/integration/
+test/samples/
+test/fixtures/
 *.test.ts
 *.test.js
 *.spec.ts

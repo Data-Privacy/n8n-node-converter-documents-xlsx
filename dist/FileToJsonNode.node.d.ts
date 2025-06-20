@@ -1,7 +1,7 @@
 import { IExecuteFunctions } from 'n8n-workflow';
 /**
  * Custom n8n node: convert files to JSON/text
- * Supports DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM
+ * Supports DOCX, XML, XLSX, CSV, PDF, TXT, PPTX, HTML
  */
 declare class FileToJsonNode {
     description: {

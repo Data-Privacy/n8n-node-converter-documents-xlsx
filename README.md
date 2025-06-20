@@ -2,12 +2,46 @@
 
 ## Description
 
-This project is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: DOC, DOCX, XML, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML/HTM.
+This project is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: **DOCX**, XML, XLSX, CSV, PDF, TXT, **PPTX**, HTML/HTM, **ODT**, **ODP**, **ODS**, **JSON**.
+
+**⚠️ Important Note about Legacy Microsoft Office files:**
+- **DOCX** (Word 2007+) - ✅ Fully supported
+- **DOC** (Word 97-2003) - ❌ Not supported due to legacy CFB format limitations
+- **PPTX** (PowerPoint 2007+) - ✅ Fully supported
+- **PPT** (PowerPoint 97-2003) - ❌ Not supported due to legacy CFB format limitations
+- **XLSX** (Excel 2007+) - ✅ Fully supported
+
+**✨ New OpenDocument Support:**
+- **ODT** (OpenDocument Text) - ✅ LibreOffice Writer documents
+- **ODP** (OpenDocument Presentation) - ✅ LibreOffice Impress presentations
+- **ODS** (OpenDocument Spreadsheet) - ✅ LibreOffice Calc spreadsheets
+
+**🔄 JSON Processing:**
+- **JSON** files with automatic structure normalization - complex nested objects are flattened for easier processing
+
+If you have old DOC/PPT files, please save them as DOCX/PPTX in Microsoft Office and try again.
+
+## Architecture & Performance Optimizations
+
+The node uses a hybrid approach with **officeparser** as the primary library for most document formats, with intelligent fallbacks:
+
+- **Primary**: `officeparser` (supports DOCX, PPTX, XLSX, PDF, ODT, ODP, ODS)
+- **Fallback for DOCX**: `mammoth` (if officeparser fails)  
+- **Fallback for PDF**: `pdf-parse` (if officeparser fails)
+- **Excel structure**: `ExcelJS` (for structured data extraction)
+- **HTML/XML**: `cheerio` + `xml2js`
+- **CSV**: `papaparse`
+- **JSON**: Built-in normalization with structure flattening
+
+This approach provides:
+- ✅ Better format compatibility
+- ✅ Improved error handling
+- ✅ Performance optimization
+- ✅ Reduced dependency complexity
 
 ## Important: Large File Limitations
 
-- **PDF, XLSX:** The libraries used (`pdf-parse`, `ExcelJS`) load the entire file into memory. When processing very large files (tens of megabytes, hundreds of thousands of rows), crashes, freezes, and memory limit exceeded errors are possible. For such cases, it's recommended to split files beforehand or use specialized tools.
-- **CSV, TXT:** Stream processing is implemented for large files (via papaparse and readline).
+- **PDF, XLSX:** The libraries used load the entire file into memory. When processing very large files (tens of megabytes, hundreds of thousands of rows), crashes, freezes, and memory limit exceeded errors are possible. For such cases, it's recommended to split files into smaller parts.
 
 ## Security and Validation
 
@@ -20,23 +54,25 @@ This project is a custom node for n8n designed to convert various file formats t
 
 - Automatic file type detection by extension or content
 - Text or table extraction from popular office and text formats
+- **OpenDocument support**: ODT, ODP, ODS files from LibreOffice/OpenOffice
+- **JSON normalization**: Automatic flattening of nested JSON structures
 - Output data: `{ text: "..." }` or `{ sheets: {...} }` + metadata (name, size, file type, processing time)
 - Large file processing (up to 50 MB for most formats)
 - Messages for empty or unsupported files
 - Protection against malicious data and XSS
+- Clear error messages for unsupported formats (e.g., old PPT files)
 
 ## Libraries Used
 
-- **xml2js** — for XML parsing
-- **mammoth** — for extracting text from DOCX
-- **officeparser** — for DOC, PPT, PPTX (secure modern library)
-- **ExcelJS** — for XLSX (modern and secure library)
-- **papaparse** — for CSV with streaming support
-- **pdf-parse** — for PDF
-- **cheerio** — for HTML/HTM
-- **sanitize-html** — for cleaning HTML/HTM from XSS
-- **file-type** — for file type detection by content
-- **chardet** + **iconv-lite** — for encoding detection and decoding of TXT
+This project uses modern, actively maintained libraries:
+
+- **officeparser** (v5.1.1) - Primary document parser with built-in PDF.js support
+- **ExcelJS** (v4.4.0) - Excel file processing with full feature support  
+- **mammoth** (v1.9.1) - DOCX fallback processor
+- **pdf-parse** (v1.1.1) - PDF fallback processor
+- **cheerio** (v1.1.0) - HTML/XML processing
+- **papaparse** (v5.5.3) - CSV processing
+- **xml2js** (v0.6.2) - XML parsing
 
 ## CI/CD and Code Quality
 
@@ -79,6 +115,35 @@ This project is a custom node for n8n designed to convert various file formats t
     "fileName": "example.xlsx",
     "fileSize": 23456,
     "fileType": "xlsx",
+    "processedAt": "2024-06-01T12:00:00.000Z"
+  }
+}
+```
+
+- For JSON normalization:
+
+**Input JSON:**
+```json
+{
+  "user": {
+    "name": "John",
+    "address": {
+      "city": "Moscow",
+      "country": "Russia"
+    }
+  }
+}
+```
+
+**Output:**
+```json
+{
+  "text": "{\n  \"user.name\": \"John\",\n  \"user.address.city\": \"Moscow\",\n  \"user.address.country\": \"Russia\"\n}",
+  "warning": "Многоуровневая структура JSON была преобразована в плоский объект",
+  "metadata": {
+    "fileName": "data.json",
+    "fileSize": 156,
+    "fileType": "json",
     "processedAt": "2024-06-01T12:00:00.000Z"
   }
 }
@@ -149,7 +214,7 @@ npm run dev
 
 ### Option 1: Install as npm package (recommended)
 
-**Update v1.0.7**: Fixed XLS processing issues and improved error messages ✅
+**Update v1.0.8**: Added ODT, ODP, ODS, JSON support + improved architecture ✅
 
 ```bash
 npm install @mazix/n8n-nodes-converter-documents
@@ -232,11 +297,11 @@ npm list
 
 ## Supported File Formats
 
-- **Text formats:** DOC, DOCX, TXT, PDF
-- **Spreadsheet formats:** XLSX, CSV *(XLS is not supported - please convert to XLSX)*
-- **Presentation formats:** PPT, PPTX
+- **Text formats:** DOCX, ODT, TXT, PDF
+- **Spreadsheet formats:** XLSX, ODS, CSV *(XLS is not supported - please convert to XLSX)*
+- **Presentation formats:** PPTX, ODP *(PPT is not supported - please convert to PPTX)*
 - **Web formats:** HTML, HTM
-- **Data formats:** XML
+- **Data formats:** XML, JSON (with structure normalization)
 
 ---
 

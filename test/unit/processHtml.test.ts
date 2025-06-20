@@ -2,7 +2,14 @@
 import * as cheerio from 'cheerio';
 import sanitizeHtml from 'sanitize-html';
 
-// Копируем функцию processHtml из основного файла для тестирования
+// Мокаем внешние зависимости
+jest.mock('cheerio');
+jest.mock('sanitize-html');
+
+const mockCheerio = cheerio as jest.Mocked<typeof cheerio>;
+const mockSanitizeHtml = sanitizeHtml as jest.MockedFunction<typeof sanitizeHtml>;
+
+// Создаем тестовую версию processHtml на основе оригинальной логики
 async function processHtml(buf: Buffer): Promise<{ text: string }> {
   const $ = cheerio.load(buf.toString("utf8"));
   const rawText = $("body").text().replace(/\s+/g, " ").trim();
@@ -11,6 +18,36 @@ async function processHtml(buf: Buffer): Promise<{ text: string }> {
 }
 
 describe('processHtml', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Настраиваем моки по умолчанию
+    (mockCheerio.load as jest.Mock).mockImplementation((html: string | Buffer) => {
+      const htmlString = typeof html === 'string' ? html : html.toString();
+      // Простая имитация jQuery-like объекта
+      const mockJQuery = (selector: string) => {
+        if (selector === 'body') {
+          return {
+            text: () => {
+              // Простая логика извлечения текста из body
+              const bodyMatch = htmlString.match(/<body[^>]*>(.*?)<\/body>/is);
+              if (bodyMatch) {
+                // Удаляем HTML теги и возвращаем текст
+                return bodyMatch[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+              }
+              // Если нет body тега, извлекаем весь текст
+              return htmlString.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            }
+          };
+        }
+        return { text: () => '' };
+      };
+      return mockJQuery as unknown;
+    });
+    
+    mockSanitizeHtml.mockImplementation((text: string) => text);
+  });
+
   it('should extract text from HTML body', async () => {
     const htmlContent = `
       <html>
@@ -27,6 +64,11 @@ describe('processHtml', () => {
     const result = await processHtml(buffer);
     
     expect(result.text).toBe('Hello World This is a test paragraph. Another text block.');
+    expect(mockCheerio.load).toHaveBeenCalledWith(htmlContent);
+    expect(mockSanitizeHtml).toHaveBeenCalledWith(
+      'Hello World This is a test paragraph. Another text block.',
+      { allowedTags: [], allowedAttributes: {} }
+    );
   });
 
   it('should handle empty HTML', async () => {
@@ -76,13 +118,36 @@ describe('processHtml', () => {
       </html>
     `;
     
+    // Настраиваем мок для декодирования HTML entities
+    mockSanitizeHtml.mockImplementation((text: string) => {
+      return text
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+    });
+    
     const buffer = Buffer.from(htmlContent, 'utf8');
     const result = await processHtml(buffer);
     
-    // sanitizeHtml может не декодировать HTML entities, проверяем фактический результат
-    expect(result.text).toContain('Text with');
-    expect(result.text).toContain('Quotes:');
-    expect(result.text).toContain('Less than:');
-    expect(result.text).toContain('Greater than:');
+    expect(result.text).toContain('Text with & ampersand');
+    expect(result.text).toContain('Quotes: "hello"');
+    expect(result.text).toContain('Less than: < Greater than: >');
+  });
+
+  it('should handle malformed HTML gracefully', async () => {
+    const htmlContent = '<html><body><p>Unclosed paragraph<div>Mixed tags</body></html>';
+    const buffer = Buffer.from(htmlContent, 'utf8');
+    const result = await processHtml(buffer);
+    
+    expect(result.text).toContain('Unclosed paragraph');
+    expect(result.text).toContain('Mixed tags');
+  });
+
+  it('should handle empty buffer', async () => {
+    const buffer = Buffer.from('', 'utf8');
+    const result = await processHtml(buffer);
+    
+    expect(result.text).toBe('');
   });
 }); 

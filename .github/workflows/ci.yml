@@ -8,6 +8,9 @@ on:
   workflow_call:
     # Позволяет вызывать этот workflow из других workflows
 
+env:
+  NODE_ENV: test
+
 jobs:
   test:
     name: Test & Quality Check
@@ -15,7 +18,8 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [18.x, 20.x, 22.x]
+      fail-fast: false
     
     steps:
     - name: Checkout Repository
@@ -36,19 +40,40 @@ jobs:
     - name: Run Type Check
       run: npm run build
       
-    - name: Run Tests
-      run: npm test
+    - name: Run Unit Tests
+      run: npm test -- --testPathPattern="unit"
       
-    - name: Run Tests with Coverage
+    - name: Run Integration Tests
+      run: npm test -- --testPathPattern="integration"
+      
+    - name: Run All Tests with Coverage
       run: npm run test:coverage
       
+    - name: Generate Test Report
+      run: |
+        echo "## 📊 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Total Tests**: $(grep -o 'Tests:.*passed' coverage/lcov-report/index.html | head -1 || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+        echo "- **Coverage**: $(grep -o '[0-9]*\.[0-9]*%' coverage/lcov-report/index.html | head -1 || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+        echo "- **Node.js Version**: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+      
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
+        flags: unittests,integrationtests
+        name: codecov-${{ matrix.node-version }}
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Archive Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.node-version }}-${{ github.sha }}
+        path: |
+          coverage/
+          test-results.xml
+        retention-days: 30
 
   security:
     name: Security Audit
@@ -77,6 +102,20 @@ jobs:
         echo "Known issues: lodash, xmldom in textract 0.20.0"
         echo "See audit.md for current status and remediation plan"
         npx audit-ci --critical || echo "Critical vulnerabilities found but CI continues"
+
+    - name: Check Bundle Size
+      run: |
+        npm run build
+        BUNDLE_SIZE=$(du -sh bundle/ | cut -f1)
+        echo "📦 Bundle size: $BUNDLE_SIZE" >> $GITHUB_STEP_SUMMARY
+        
+        # Проверяем что bundle не превышает 15MB
+        BUNDLE_SIZE_BYTES=$(du -sb bundle/ | cut -f1)
+        if [ $BUNDLE_SIZE_BYTES -gt 15728640 ]; then
+          echo "❌ Bundle size exceeds 15MB limit!"
+          exit 1
+        fi
+        echo "✅ Bundle size within acceptable limits"
 
   build:
     name: Build Check
@@ -107,9 +146,72 @@ jobs:
         fi
         echo "✅ Build artifacts created successfully"
         
+        # Проверяем что все необходимые файлы созданы
+        REQUIRED_FILES=("dist/FileToJsonNode.node.js" "dist/FileToJsonNode.node.d.ts")
+        for file in "${REQUIRED_FILES[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Required file $file not found!"
+            exit 1
+          fi
+        done
+        echo "✅ All required build artifacts present"
+        
+    - name: Test Built Package
+      run: |
+        # Создаем standalone версию для тестирования
+        npm run standalone
+        if [ ! -f "standalone/FileToJsonNode.node.js" ]; then
+          echo "❌ Standalone build failed!"
+          exit 1
+        fi
+        echo "✅ Standalone build successful"
+        
     - name: Archive Build Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts-${{ github.sha }}
-        path: dist/
-        retention-days: 7 
+        path: |
+          dist/
+          bundle/
+          standalone/
+        retention-days: 7
+
+  compatibility:
+    name: Format Compatibility Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install Dependencies
+      run: npm ci
+      
+    - name: Test Format Support
+      run: |
+        echo "## 📄 Supported Formats" >> $GITHUB_STEP_SUMMARY
+        echo "Testing format compatibility..." >> $GITHUB_STEP_SUMMARY
+        
+        # Запускаем интеграционные тесты с реальными файлами
+        npm test -- --testPathPattern="integration/real-files" --verbose
+        
+        echo "✅ All formats tested successfully" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Supported formats:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 📝 Text: TXT, RTF" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 Spreadsheets: XLSX, CSV, ODS" >> $GITHUB_STEP_SUMMARY
+        echo "- 📄 Documents: DOCX, PDF, ODT" >> $GITHUB_STEP_SUMMARY
+        echo "- 🎯 Presentations: PPTX, ODP" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌐 Web: HTML, XML, JSON" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**New features:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🆕 OpenDocument support (ODT, ODP, ODS)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔄 JSON normalization with structure flattening" >> $GITHUB_STEP_SUMMARY
+        echo "- ⚡ Enhanced error handling for legacy formats" >> $GITHUB_STEP_SUMMARY 
