@@ -60,8 +60,15 @@ jobs:
         
     - name: Update Package Version
       run: |
-        npm version ${{ steps.version.outputs.version }} --no-git-tag-version
-        echo "✅ Package version updated to ${{ steps.version.outputs.version }}"
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        TARGET_VERSION="${{ steps.version.outputs.version }}"
+        
+        if [ "$CURRENT_VERSION" != "$TARGET_VERSION" ]; then
+          npm version $TARGET_VERSION --no-git-tag-version
+          echo "✅ Package version updated from $CURRENT_VERSION to $TARGET_VERSION"
+        else
+          echo "✅ Package version is already $TARGET_VERSION - no update needed"
+        fi
         
     - name: Generate Changelog
       id: changelog
@@ -99,7 +106,7 @@ jobs:
           dist/ \
           package.json \
           README.md \
-          audit.md
+          $([ -f docs/audit.md ] && echo "docs/audit.md" || echo "")
         
         # Проверяем что создался
         ls -la *.tar.gz
