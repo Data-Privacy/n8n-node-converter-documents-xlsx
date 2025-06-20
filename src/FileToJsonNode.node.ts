@@ -504,6 +504,10 @@ class FileToJsonNode {
       "pptx",
       "html",
       "htm",
+      "odt",
+      "odp",
+      "ods",
+      "json",
     ];
     const maxFileSize = (this.getNodeParameter('maxFileSize', 0, 50) as number) * 1024 * 1024; // MB в байты
     const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4) as number;
