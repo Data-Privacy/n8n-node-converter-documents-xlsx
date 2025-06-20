@@ -200,7 +200,7 @@ jobs:
         echo "Testing format compatibility..." >> $GITHUB_STEP_SUMMARY
         
         # Запускаем интеграционные тесты с реальными файлами
-        npm test -- --testPathPattern="integration/real-files" --verbose
+        npm test -- --testPathPatterns="integration/real-files" --verbose
         
         echo "✅ All formats tested successfully" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
