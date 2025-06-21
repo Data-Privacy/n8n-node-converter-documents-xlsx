@@ -178,14 +178,67 @@ function flattenJsonObject(obj: unknown, prefix: string = '', result: Record<str
   return result;
 }
 
+// Интерфейсы для типизации YML структур
+interface YmlCurrency {
+  $: { id: string; rate?: string };
+  id?: string;
+  rate?: string;
+}
+
+interface YmlCategory {
+  $: { id: string; parentId?: string };
+  _?: string;
+  id?: string;
+  name?: string;
+  parentId?: string;
+}
+
+interface YmlOffer {
+  $: { id: string; available?: string };
+  id?: string;
+  available?: string;
+  name?: string | string[];
+  url?: string | string[];
+  price?: string | string[];
+  currencyId?: string | string[];
+  categoryId?: string | string[];
+  vendor?: string | string[];
+  description?: string | string[];
+  oldprice?: string | string[];
+  vendorCode?: string | string[];
+  barcode?: string | string[];
+  sales_notes?: string | string[];
+  delivery?: string | string[];
+  pickup?: string | string[];
+  picture?: string | string[];
+  param?: Array<{ $: { name: string; unit?: string }; _?: string; name?: string; value?: string; unit?: string }>;
+}
+
+interface YmlShop {
+  name?: string | string[];
+  company?: string | string[];
+  url?: string | string[];
+  currencies?: Array<{ currency: YmlCurrency | YmlCurrency[] }>;
+  categories?: Array<{ category: YmlCategory | YmlCategory[] }>;
+  offers?: Array<{ offer: YmlOffer | YmlOffer[] }>;
+}
+
+interface YmlCatalog {
+  yml_catalog: {
+    $?: { date?: string };
+    date?: string;
+    shop: YmlShop | YmlShop[];
+  };
+}
+
 /**
  * Обработка YML файлов Яндекс Маркета
  * Преобразует XML структуру в удобный для анализа JSON формат
  */
-function processYandexMarketYml(parsed: any): Partial<JsonResult> {
+function processYandexMarketYml(parsed: YmlCatalog): Partial<JsonResult> {
   try {
     const catalog = parsed.yml_catalog;
-    const shop = catalog.shop[0] || catalog.shop;
+    const shop = Array.isArray(catalog.shop) ? catalog.shop[0] : catalog.shop;
     
     // Извлекаем основную информацию о магазине
     const shopInfo = {
@@ -202,7 +255,7 @@ function processYandexMarketYml(parsed: any): Partial<JsonResult> {
         ? shop.currencies[0].currency 
         : [shop.currencies[0].currency];
       
-      currencies.push(...currencyList.map((curr: any) => ({
+      currencies.push(...currencyList.map((curr: YmlCurrency) => ({
         id: curr.$.id || curr.id,
         rate: curr.$.rate || curr.rate || '1'
       })));
@@ -215,9 +268,9 @@ function processYandexMarketYml(parsed: any): Partial<JsonResult> {
         ? shop.categories[0].category 
         : [shop.categories[0].category];
       
-      categories.push(...categoryList.map((cat: any) => ({
+      categories.push(...categoryList.map((cat: YmlCategory) => ({
         id: cat.$.id || cat.id,
-        name: cat._ || cat.name || cat,
+        name: cat._ || cat.name || String(cat),
         parentId: cat.$.parentId || cat.parentId || null
       })));
     }
@@ -229,8 +282,8 @@ function processYandexMarketYml(parsed: any): Partial<JsonResult> {
         ? shop.offers[0].offer 
         : [shop.offers[0].offer];
       
-      offers.push(...offerList.map((offer: any) => {
-        const offerData: any = {
+      offers.push(...offerList.map((offer: YmlOffer) => {
+        const offerData: Record<string, unknown> = {
           id: offer.$.id || offer.id,
           available: offer.$.available || offer.available || 'true',
           name: offer.name?.[0] || offer.name || '',
@@ -253,15 +306,15 @@ function processYandexMarketYml(parsed: any): Partial<JsonResult> {
         // Обрабатываем картинки
         if (offer.picture) {
           const pictures = Array.isArray(offer.picture) ? offer.picture : [offer.picture];
-          offerData.pictures = pictures.map((pic: any) => pic._ || pic || '');
+          offerData.pictures = pictures.map((pic: string) => pic || '');
         }
         
         // Обрабатываем параметры
         if (offer.param) {
           const params = Array.isArray(offer.param) ? offer.param : [offer.param];
-          offerData.parameters = params.map((param: any) => ({
+          offerData.parameters = params.map((param) => ({
             name: param.$.name || param.name,
-            value: param._ || param.value || param,
+            value: param._ || param.value || String(param),
             unit: param.$.unit || param.unit || null
           }));
         }

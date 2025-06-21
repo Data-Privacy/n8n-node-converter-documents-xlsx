@@ -1,6 +1,7 @@
 import { parseStringPromise } from 'xml2js';
 
 // Копируем функцию processYandexMarketYml для тестирования
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function processYandexMarketYml(parsed: any): { text: string; warning?: string } {
   try {
     const catalog = parsed.yml_catalog;
@@ -15,12 +16,14 @@ function processYandexMarketYml(parsed: any): { text: string; warning?: string }
     };
     
     // Обрабатываем валюты
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currencies: any[] = [];
     if (shop.currencies && shop.currencies[0] && shop.currencies[0].currency) {
       const currencyList = Array.isArray(shop.currencies[0].currency) 
         ? shop.currencies[0].currency 
         : [shop.currencies[0].currency];
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currencies.push(...currencyList.map((curr: any) => ({
         id: curr.$.id || curr.id,
         rate: curr.$.rate || curr.rate || '1'
@@ -28,12 +31,14 @@ function processYandexMarketYml(parsed: any): { text: string; warning?: string }
     }
     
     // Обрабатываем категории
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const categories: any[] = [];
     if (shop.categories && shop.categories[0] && shop.categories[0].category) {
       const categoryList = Array.isArray(shop.categories[0].category) 
         ? shop.categories[0].category 
         : [shop.categories[0].category];
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       categories.push(...categoryList.map((cat: any) => ({
         id: cat.$.id || cat.id,
         name: cat._ || cat.name || cat,
@@ -42,13 +47,16 @@ function processYandexMarketYml(parsed: any): { text: string; warning?: string }
     }
     
     // Обрабатываем товары (offers)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const offers: any[] = [];
     if (shop.offers && shop.offers[0] && shop.offers[0].offer) {
       const offerList = Array.isArray(shop.offers[0].offer) 
         ? shop.offers[0].offer 
         : [shop.offers[0].offer];
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       offers.push(...offerList.map((offer: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const offerData: any = {
           id: offer.$.id || offer.id,
           available: offer.$.available || offer.available || 'true',
@@ -72,12 +80,14 @@ function processYandexMarketYml(parsed: any): { text: string; warning?: string }
         // Обрабатываем картинки
         if (offer.picture) {
           const pictures = Array.isArray(offer.picture) ? offer.picture : [offer.picture];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           offerData.pictures = pictures.map((pic: any) => pic._ || pic || '');
         }
         
         // Обрабатываем параметры
         if (offer.param) {
           const params = Array.isArray(offer.param) ? offer.param : [offer.param];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           offerData.parameters = params.map((param: any) => ({
             name: param.$.name || param.name,
             value: param._ || param.value || param,

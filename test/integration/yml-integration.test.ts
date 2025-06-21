@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { parseStringPromise } from 'xml2js';
 
 describe('YML Integration Tests', () => {
   test('should parse Yandex Market YML file structure', async () => {
@@ -21,7 +22,6 @@ describe('YML Integration Tests', () => {
   });
   
   test('should handle YML file with XML parsing', async () => {
-    const { parseStringPromise } = require('xml2js');
     const filePath = join(__dirname, '../samples/sample_yandex_market.yml');
     const ymlContent = readFileSync(filePath, 'utf8');
     
