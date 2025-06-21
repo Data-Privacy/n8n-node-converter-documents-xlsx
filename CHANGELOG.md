@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.11.1] - 2025-01-27
+
+### 🔧 Bug Fixes
+- **GitHub Actions**: Fixed permissions error in release workflow
+  - Added `checks: write` permission to release.yml
+  - Resolves workflow error when calling ci.yml from release.yml
+- **Code Quality**: Fixed all TypeScript linter errors (18 issues)
+  - Replaced `any` types with proper interfaces for YML processing
+  - Added type-safe interfaces: YmlCurrency, YmlCategory, YmlOffer, YmlShop, YmlCatalog
+  - Fixed `require()` import in integration tests
+  - Added eslint-disable comments for test files where needed
+- **Build**: All tests passing (60/60) and linter clean
+
+### 📝 Technical Details
+- Enhanced type safety for YML processing functions
+- Improved code maintainability and IDE support
+- No functional changes - purely technical improvements
+
+---
+
 ## [1.0.11] - 2025-01-27
 
 ### ✨ New Features
