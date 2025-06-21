@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="2024-01-15 12:00">
+  <shop>
+    <name>Интернет-магазин "Технотест"</name>
+    <company>ООО "Технотест"</company>
+    <url>https://example.com</url>
+    
+    <currencies>
+      <currency id="RUR" rate="1"/>
+    </currencies>
+    
+    <categories>
+      <category id="1">Электроника</category>
+      <category id="2" parentId="1">Смартфоны</category>
+      <category id="3" parentId="1">Ноутбуки</category>
+      <category id="4">Одежда</category>
+      <category id="5" parentId="4">Мужская одежда</category>
+    </categories>
+    
+    <offers>
+      <offer id="12345" available="true">
+        <name>Смартфон Apple iPhone 15 128GB</name>
+        <url>https://example.com/iphone15</url>
+        <price>89990</price>
+        <oldprice>99990</oldprice>
+        <currencyId>RUR</currencyId>
+        <categoryId>2</categoryId>
+        <vendor>Apple</vendor>
+        <vendorCode>IPHONE15-128</vendorCode>
+        <picture>https://example.com/images/iphone15_1.jpg</picture>
+        <picture>https://example.com/images/iphone15_2.jpg</picture>
+        <description>Новый iPhone 15 с процессором A16 Bionic и улучшенной камерой</description>
+        <sales_notes>Быстрая доставка, гарантия 1 год</sales_notes>
+        <param name="Цвет">Черный</param>
+        <param name="Память">128 ГБ</param>
+        <param name="Операционная система">iOS 17</param>
+        <barcode>1234567890123</barcode>
+        <delivery>true</delivery>
+        <pickup>true</pickup>
+      </offer>
+      
+      <offer id="67890" available="true">
+        <name>Ноутбук ASUS ZenBook 14</name>
+        <url>https://example.com/asus-zenbook</url>
+        <price>75000</price>
+        <currencyId>RUR</currencyId>
+        <categoryId>3</categoryId>
+        <vendor>ASUS</vendor>
+        <vendorCode>ZB14-I5-16GB</vendorCode>
+        <picture>https://example.com/images/zenbook_1.jpg</picture>
+        <description>Легкий и производительный ноутбук для работы и учебы</description>
+        <param name="Процессор">Intel Core i5</param>
+        <param name="Оперативная память">16 ГБ</param>
+        <param name="Диагональ экрана">14 дюймов</param>
+        <delivery>true</delivery>
+        <pickup>false</pickup>
+      </offer>
+      
+      <offer id="11111" available="false">
+        <name>Куртка мужская зимняя</name>
+        <url>https://example.com/winter-jacket</url>
+        <price>5500</price>
+        <currencyId>RUR</currencyId>
+        <categoryId>5</categoryId>
+        <vendor>NoName</vendor>
+        <description>Теплая зимняя куртка с водоотталкивающим покрытием</description>
+        <param name="Размер">XL</param>
+        <param name="Цвет">Синий</param>
+        <param name="Сезон">Зима</param>
+        <delivery>true</delivery>
+        <pickup>true</pickup>
+      </offer>
+    </offers>
+  </shop>
+</yml_catalog> 

@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.0.11] - 2025-01-27
+
+### ✨ New Features
+- **YML Support**: Added comprehensive support for YML file format
+  - Specialized processing for Yandex Market catalog files (yml_catalog format)
+  - Structured JSON output with sections: shop_info, currencies, categories, offers, statistics
+  - Automatic detection of Yandex Market YML structure
+  - Fallback to standard XML processing for regular YML files
+  - Support for product parameters, images, delivery options
+  - Performance optimized for typical catalog sizes with warnings for large datasets
+
+### 📄 Technical Implementation
+- Added `processYandexMarketYml` function for specialized YML processing
+- Enhanced file type detection and processing strategies
+- Comprehensive test coverage with integration and unit tests
+- Updated documentation with YML examples and usage guidelines
+
+### 📁 Files Added/Modified
+- `src/FileToJsonNode.node.ts`: Added YML processing strategy
+- `test/samples/sample_yandex_market.yml`: Sample YML test file
+- `test/integration/yml-integration.test.ts`: Integration tests
+- `test/unit/yml-processor.test.ts`: Unit tests
+- `docs/yml_support.md`: Comprehensive YML documentation
+- `README.md`: Updated with YML support information
+
+### 🎯 Impact
+- Users can now process Yandex Market catalog files with structured output
+- Enhanced data extraction capabilities for e-commerce integrations
+- Backward compatible - no breaking changes
+
+---
+
 ## [1.0.10] - 2025-06-20
 
 ### 🐛 Bug Fixes

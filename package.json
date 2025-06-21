@@ -1,7 +1,7 @@
 {
   "name": "@mazix/n8n-nodes-converter-documents",
-  "version": "1.0.10",
-  "description": "n8n node to convert various document formats (DOCX, XML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML, JSON, ODT, ODP, ODS) to JSON or text format",
+  "version": "1.0.11",
+  "description": "n8n node to convert various document formats (DOCX, XML, YML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML, JSON, ODT, ODP, ODS) to JSON or text format",
   "main": "dist/FileToJsonNode.node.js",
   "scripts": {
     "build": "tsc && cp src/*.svg dist/ 2>nul || (copy src\\*.svg dist\\ 2>nul || exit 0)",
@@ -38,6 +38,8 @@
     "powerpoint",
     "csv",
     "xml",
+    "yml",
+    "yandex-market",
     "html"
   ],
   "author": "mazix",

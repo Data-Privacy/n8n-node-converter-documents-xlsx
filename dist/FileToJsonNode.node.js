@@ -173,6 +173,116 @@ function flattenJsonObject(obj, prefix = '', result = {}) {
     });
     return result;
 }
+/**
+ * Обработка YML файлов Яндекс Маркета
+ * Преобразует XML структуру в удобный для анализа JSON формат
+ */
+function processYandexMarketYml(parsed) {
+    try {
+        const catalog = parsed.yml_catalog;
+        const shop = catalog.shop[0] || catalog.shop;
+        // Извлекаем основную информацию о магазине
+        const shopInfo = {
+            name: shop.name?.[0] || shop.name || 'Unknown Shop',
+            company: shop.company?.[0] || shop.company || '',
+            url: shop.url?.[0] || shop.url || '',
+            date: catalog.$?.date || catalog.date || ''
+        };
+        // Обрабатываем валюты
+        const currencies = [];
+        if (shop.currencies && shop.currencies[0] && shop.currencies[0].currency) {
+            const currencyList = Array.isArray(shop.currencies[0].currency)
+                ? shop.currencies[0].currency
+                : [shop.currencies[0].currency];
+            currencies.push(...currencyList.map((curr) => ({
+                id: curr.$.id || curr.id,
+                rate: curr.$.rate || curr.rate || '1'
+            })));
+        }
+        // Обрабатываем категории
+        const categories = [];
+        if (shop.categories && shop.categories[0] && shop.categories[0].category) {
+            const categoryList = Array.isArray(shop.categories[0].category)
+                ? shop.categories[0].category
+                : [shop.categories[0].category];
+            categories.push(...categoryList.map((cat) => ({
+                id: cat.$.id || cat.id,
+                name: cat._ || cat.name || cat,
+                parentId: cat.$.parentId || cat.parentId || null
+            })));
+        }
+        // Обрабатываем товары (offers)
+        const offers = [];
+        if (shop.offers && shop.offers[0] && shop.offers[0].offer) {
+            const offerList = Array.isArray(shop.offers[0].offer)
+                ? shop.offers[0].offer
+                : [shop.offers[0].offer];
+            offers.push(...offerList.map((offer) => {
+                const offerData = {
+                    id: offer.$.id || offer.id,
+                    available: offer.$.available || offer.available || 'true',
+                    name: offer.name?.[0] || offer.name || '',
+                    url: offer.url?.[0] || offer.url || '',
+                    price: offer.price?.[0] || offer.price || '',
+                    currencyId: offer.currencyId?.[0] || offer.currencyId || '',
+                    categoryId: offer.categoryId?.[0] || offer.categoryId || '',
+                    vendor: offer.vendor?.[0] || offer.vendor || '',
+                    description: offer.description?.[0] || offer.description || ''
+                };
+                // Добавляем опциональные поля
+                if (offer.oldprice)
+                    offerData.oldprice = offer.oldprice[0] || offer.oldprice;
+                if (offer.vendorCode)
+                    offerData.vendorCode = offer.vendorCode[0] || offer.vendorCode;
+                if (offer.barcode)
+                    offerData.barcode = offer.barcode[0] || offer.barcode;
+                if (offer.sales_notes)
+                    offerData.sales_notes = offer.sales_notes[0] || offer.sales_notes;
+                if (offer.delivery)
+                    offerData.delivery = offer.delivery[0] || offer.delivery;
+                if (offer.pickup)
+                    offerData.pickup = offer.pickup[0] || offer.pickup;
+                // Обрабатываем картинки
+                if (offer.picture) {
+                    const pictures = Array.isArray(offer.picture) ? offer.picture : [offer.picture];
+                    offerData.pictures = pictures.map((pic) => pic._ || pic || '');
+                }
+                // Обрабатываем параметры
+                if (offer.param) {
+                    const params = Array.isArray(offer.param) ? offer.param : [offer.param];
+                    offerData.parameters = params.map((param) => ({
+                        name: param.$.name || param.name,
+                        value: param._ || param.value || param,
+                        unit: param.$.unit || param.unit || null
+                    }));
+                }
+                return offerData;
+            }));
+        }
+        // Формируем итоговую структуру
+        const result = {
+            yandex_market_catalog: {
+                shop_info: shopInfo,
+                currencies: currencies,
+                categories: categories,
+                offers: offers,
+                statistics: {
+                    total_categories: categories.length,
+                    total_offers: offers.length,
+                    available_offers: offers.filter(o => o.available === 'true' || o.available === true).length,
+                    unavailable_offers: offers.filter(o => o.available === 'false' || o.available === false).length
+                }
+            }
+        };
+        return {
+            text: JSON.stringify(result, null, 2),
+            warning: offers.length > 1000 ? `Большой каталог: ${offers.length} товаров` : undefined
+        };
+    }
+    catch (error) {
+        throw new errors_1.ProcessingError(`YML catalog processing error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
 // Стратегии обработки форматов
 const strategies = {
     doc: async (buf) => {
@@ -217,6 +327,21 @@ const strategies = {
     xml: async (buf) => {
         const parsed = await (0, xml2js_1.parseStringPromise)(buf.toString("utf8"));
         return { text: JSON.stringify(parsed, null, 2) };
+    },
+    yml: async (buf) => {
+        try {
+            const xmlContent = buf.toString("utf8");
+            const parsed = await (0, xml2js_1.parseStringPromise)(xmlContent);
+            // Проверяем, является ли это YML файлом Яндекс Маркета
+            if (parsed.yml_catalog && parsed.yml_catalog.shop) {
+                return processYandexMarketYml(parsed);
+            }
+            // Если это обычный YML/XML, обрабатываем как XML
+            return { text: JSON.stringify(parsed, null, 2) };
+        }
+        catch (error) {
+            throw new errors_1.ProcessingError(`YML processing error: ${error instanceof Error ? error.message : String(error)}`);
+        }
     },
     json: async (buf) => {
         try {
@@ -424,7 +549,7 @@ async function processHtml(buf) {
 }
 /**
  * Custom n8n node: convert files to JSON/text
- * Supports DOCX, XML, XLSX, CSV, PDF, TXT, PPTX, HTML
+ * Supports DOCX, XML, YML, XLSX, CSV, PDF, TXT, PPTX, HTML
  */
 class FileToJsonNode {
     constructor() {
@@ -434,7 +559,7 @@ class FileToJsonNode {
             icon: "file:icon.svg",
             group: ["transform"],
             version: 5,
-            description: "DOCX / XML / XLSX / CSV / PDF / TXT / PPTX / HTML → JSON|text",
+            description: "DOCX / XML / YML / XLSX / CSV / PDF / TXT / PPTX / HTML → JSON|text",
             defaults: { name: "Convert File to JSON" },
             inputs: ["main"],
             outputs: ["main"],
@@ -480,6 +605,7 @@ class FileToJsonNode {
             "doc",
             "docx",
             "xml",
+            "yml",
             "xlsx",
             "csv",
             "pdf",

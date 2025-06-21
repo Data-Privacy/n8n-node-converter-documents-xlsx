@@ -2,7 +2,7 @@
 
 ## 📄 Description
 
-This is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: **DOCX**, **XML**, **XLSX**, **CSV**, **PDF**, **TXT**, **PPTX**, **HTML/HTM**, **ODT**, **ODP**, **ODS**, **JSON**.
+This is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: **DOCX**, **XML**, **YML**, **XLSX**, **CSV**, **PDF**, **TXT**, **PPTX**, **HTML/HTM**, **ODT**, **ODP**, **ODS**, **JSON**.
 
 ### ⚠️ Important Note about Legacy Microsoft Office Files
 
@@ -17,6 +17,15 @@ This is a custom node for n8n designed to convert various file formats to JSON o
 - **ODT** (OpenDocument Text) - ✅ LibreOffice Writer documents
 - **ODP** (OpenDocument Presentation) - ✅ LibreOffice Impress presentations
 - **ODS** (OpenDocument Spreadsheet) - ✅ LibreOffice Calc spreadsheets
+
+### 🛒 Yandex Market YML Support
+
+- **YML** (Yandex Market Catalog) - ✅ Specialized parsing for Yandex Market product feeds
+  - Automatic detection of YML catalog structure (`yml_catalog` root element)
+  - Structured extraction of shop information, categories, and product offers
+  - Statistical analysis (total products, available/unavailable items)
+  - Parameter and attribute processing
+  - Fallback to regular XML parsing for non-Yandex YML files
 
 ### 🔄 JSON Processing
 
@@ -144,6 +153,41 @@ This project uses modern, actively maintained libraries:
     "fileName": "data.json",
     "fileSize": 156,
     "fileType": "json",
+    "processedAt": "2024-06-01T12:00:00.000Z"
+  }
+}
+```
+
+### For Yandex Market YML files:
+
+**Input YML:**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="2024-01-15 12:00">
+  <shop>
+    <name>Test Shop</name>
+    <categories>
+      <category id="1">Electronics</category>
+    </categories>
+    <offers>
+      <offer id="12345" available="true">
+        <name>Smartphone</name>
+        <price>50000</price>
+        <vendor>Apple</vendor>
+      </offer>
+    </offers>
+  </shop>
+</yml_catalog>
+```
+
+**Output:**
+```json
+{
+  "text": "{\n  \"yandex_market_catalog\": {\n    \"shop_info\": {\n      \"name\": \"Test Shop\",\n      \"date\": \"2024-01-15 12:00\"\n    },\n    \"categories\": [\n      {\"id\": \"1\", \"name\": \"Electronics\"}\n    ],\n    \"offers\": [\n      {\n        \"id\": \"12345\",\n        \"name\": \"Smartphone\",\n        \"price\": \"50000\",\n        \"vendor\": \"Apple\",\n        \"available\": \"true\"\n      }\n    ],\n    \"statistics\": {\n      \"total_categories\": 1,\n      \"total_offers\": 1,\n      \"available_offers\": 1,\n      \"unavailable_offers\": 0\n    }\n  }\n}",
+  "metadata": {
+    "fileName": "catalog.yml",
+    "fileSize": 512,
+    "fileType": "yml",
     "processedAt": "2024-06-01T12:00:00.000Z"
   }
 }
