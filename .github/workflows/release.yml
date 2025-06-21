@@ -46,6 +46,21 @@ jobs:
     - name: Build Project
       run: npm run build
       
+    - name: Verify Build Artifacts
+      run: |
+        if [ ! -d "dist" ]; then
+          echo "❌ Build artifacts not found!"
+          exit 1
+        fi
+        
+        if [ ! -f "dist/FileToJsonNode.node.js" ]; then
+          echo "❌ Main build file not found!"
+          exit 1
+        fi
+        
+        echo "✅ Build artifacts verified"
+        ls -la dist/
+        
     - name: Get Version from Tag
       id: version
       run: |
@@ -78,14 +93,28 @@ jobs:
         echo "## 📋 Changes in this release:" >> CHANGELOG.md
         echo "" >> CHANGELOG.md
         
-        # Получаем коммиты с последнего тега
+        # Получаем коммиты с последнего тега (с улучшенной обработкой ошибок)
         LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        if [ -n "$LAST_TAG" ]; then
+        if [ -n "$LAST_TAG" ] && [ "$LAST_TAG" != "${{ steps.version.outputs.tag }}" ]; then
           echo "### 📝 Commits since $LAST_TAG:" >> CHANGELOG.md
-          git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+          COMMIT_COUNT=$(git rev-list $LAST_TAG..HEAD --count 2>/dev/null || echo "0")
+          if [ "$COMMIT_COUNT" -gt "0" ]; then
+            git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+          else
+            echo "- No new commits since last tag" >> CHANGELOG.md
+          fi
         else
           echo "### 📝 All commits:" >> CHANGELOG.md
-          git log --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+          TOTAL_COMMITS=$(git rev-list HEAD --count 2>/dev/null || echo "0")
+          if [ "$TOTAL_COMMITS" -gt "0" ]; then
+            git log --pretty=format:"- %s (%h)" --no-merges --max-count=20 >> CHANGELOG.md
+            if [ "$TOTAL_COMMITS" -gt "20" ]; then
+              echo "" >> CHANGELOG.md
+              echo "- ... and $(($TOTAL_COMMITS - 20)) more commits" >> CHANGELOG.md
+            fi
+          else
+            echo "- Initial release" >> CHANGELOG.md
+          fi
         fi
         
         echo "" >> CHANGELOG.md
@@ -101,20 +130,33 @@ jobs:
         
     - name: Create Build Archive
       run: |
+        # Создаем список файлов для архива
+        ARCHIVE_FILES="dist/ package.json README.md"
+        
+        # Добавляем audit.md если он существует
+        if [ -f "docs/audit.md" ]; then
+          ARCHIVE_FILES="$ARCHIVE_FILES docs/audit.md"
+          echo "✅ Including docs/audit.md in archive"
+        else
+          echo "ℹ️ docs/audit.md not found, skipping"
+        fi
+        
         # Создаем архив с артефактами сборки
-        tar -czf n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz \
-          dist/ \
-          package.json \
-          README.md \
-          $([ -f docs/audit.md ] && echo "docs/audit.md" || echo "")
+        tar -czf n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz $ARCHIVE_FILES
         
         # Проверяем что создался
-        ls -la *.tar.gz
-        echo "✅ Build archive created"
+        if [ -f "n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz" ]; then
+          ls -la *.tar.gz
+          echo "✅ Build archive created successfully"
+        else
+          echo "❌ Failed to create build archive"
+          exit 1
+        fi
         
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       id: create_release
+      if: github.ref_type == 'tag'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -123,6 +165,9 @@ jobs:
         body_path: CHANGELOG.md
         draft: false
         prerelease: false
+        generate_release_notes: true
+        make_latest: true
+        preserve_order: true
         files: |
           n8n-node-converter-documents-${{ steps.version.outputs.version }}.tar.gz
           package.json
@@ -133,7 +178,9 @@ jobs:
         echo "- **Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Release URL:** ${{ steps.create_release.outputs.url }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Assets uploaded:** 2 files" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release ID:** ${{ steps.create_release.outputs.id }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Upload URL:** ${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Assets:** ${{ steps.create_release.outputs.assets }}" >> $GITHUB_STEP_SUMMARY
 
   # Уведомление о релизе
   notify:

@@ -1,27 +1,30 @@
-# n8n-node-converter-documents
+# n8n-nodes-converter-documents
 
-## Description
+## 📄 Description
 
-This project is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: **DOCX**, XML, XLSX, CSV, PDF, TXT, **PPTX**, HTML/HTM, **ODT**, **ODP**, **ODS**, **JSON**.
+This is a custom node for n8n designed to convert various file formats to JSON or text format. Supported formats: **DOCX**, **XML**, **XLSX**, **CSV**, **PDF**, **TXT**, **PPTX**, **HTML/HTM**, **ODT**, **ODP**, **ODS**, **JSON**.
 
-**⚠️ Important Note about Legacy Microsoft Office files:**
+### ⚠️ Important Note about Legacy Microsoft Office Files
+
 - **DOCX** (Word 2007+) - ✅ Fully supported
 - **DOC** (Word 97-2003) - ❌ Not supported due to legacy CFB format limitations
 - **PPTX** (PowerPoint 2007+) - ✅ Fully supported
 - **PPT** (PowerPoint 97-2003) - ❌ Not supported due to legacy CFB format limitations
 - **XLSX** (Excel 2007+) - ✅ Fully supported
 
-**✨ New OpenDocument Support:**
+### ✨ OpenDocument Format Support
+
 - **ODT** (OpenDocument Text) - ✅ LibreOffice Writer documents
 - **ODP** (OpenDocument Presentation) - ✅ LibreOffice Impress presentations
 - **ODS** (OpenDocument Spreadsheet) - ✅ LibreOffice Calc spreadsheets
 
-**🔄 JSON Processing:**
+### 🔄 JSON Processing
+
 - **JSON** files with automatic structure normalization - complex nested objects are flattened for easier processing
 
-If you have old DOC/PPT files, please save them as DOCX/PPTX in Microsoft Office and try again.
+> **Note**: If you have old DOC/PPT files, please save them as DOCX/PPTX in Microsoft Office and try again.
 
-## Architecture & Performance Optimizations
+## 🏗️ Architecture & Performance Optimizations
 
 The node uses a hybrid approach with **officeparser** as the primary library for most document formats, with intelligent fallbacks:
 
@@ -39,18 +42,18 @@ This approach provides:
 - ✅ Performance optimization
 - ✅ Reduced dependency complexity
 
-## Important: Large File Limitations
+## ⚠️ Important: Large File Limitations
 
 - **PDF, XLSX:** The libraries used load the entire file into memory. When processing very large files (tens of megabytes, hundreds of thousands of rows), crashes, freezes, and memory limit exceeded errors are possible. For such cases, it's recommended to split files into smaller parts.
 
-## Security and Validation
+## 🔒 Security and Validation
 
-- Input data undergoes strict validation (type, structure, size, presence of binary data).
-- For HTML/HTM, sanitize-html is used to protect against XSS and malicious scripts.
-- **Security updates:** Replaced vulnerable libraries with secure alternatives (textract → officeparser).
-- Regular dependency checks using npm audit and audit-ci.
+- Input data undergoes strict validation (type, structure, size, presence of binary data)
+- For HTML/HTM, sanitize-html is used to protect against XSS and malicious scripts
+- **Security updates:** Replaced vulnerable libraries with secure alternatives (textract → officeparser)
+- Regular dependency checks using npm audit and audit-ci
 
-## Features
+## 🚀 Features
 
 - Automatic file type detection by extension or content
 - Text or table extraction from popular office and text formats
@@ -62,7 +65,7 @@ This approach provides:
 - Protection against malicious data and XSS
 - Clear error messages for unsupported formats (e.g., old PPT files)
 
-## Libraries Used
+## 📚 Libraries Used
 
 This project uses modern, actively maintained libraries:
 
@@ -74,7 +77,7 @@ This project uses modern, actively maintained libraries:
 - **papaparse** (v5.5.3) - CSV processing
 - **xml2js** (v0.6.2) - XML parsing
 
-## CI/CD and Code Quality
+## 🔧 CI/CD and Code Quality
 
 - **GitHub Actions:** automatic testing on Node.js 18.x and 20.x
 - **Linting:** ESLint with TypeScript support
@@ -82,16 +85,14 @@ This project uses modern, actively maintained libraries:
 - **Security:** automatic vulnerability checks
 - **Build:** TypeScript compilation with type checking
 
-## Input and Output Data Examples
+## 📊 Input and Output Data Examples
 
 **Input:**
-
-- Binary file (e.g., DOCX, PDF, XLSX, etc.) in the `data` field.
+- Binary file (e.g., DOCX, PDF, XLSX, etc.) in the `data` field
 
 **Output:**
 
-- For text formats:
-
+### For text formats:
 ```json
 {
   "text": "Extracted text...",
@@ -104,8 +105,7 @@ This project uses modern, actively maintained libraries:
 }
 ```
 
-- For tabular formats:
-
+### For tabular formats:
 ```json
 {
   "sheets": {
@@ -120,7 +120,7 @@ This project uses modern, actively maintained libraries:
 }
 ```
 
-- For JSON normalization:
+### For JSON normalization:
 
 **Input JSON:**
 ```json
@@ -139,7 +139,7 @@ This project uses modern, actively maintained libraries:
 ```json
 {
   "text": "{\n  \"user.name\": \"John\",\n  \"user.address.city\": \"Moscow\",\n  \"user.address.country\": \"Russia\"\n}",
-  "warning": "Многоуровневая структура JSON была преобразована в плоский объект",
+  "warning": "Multi-level JSON structure was converted to flat object",
   "metadata": {
     "fileName": "data.json",
     "fileSize": 156,
@@ -149,7 +149,7 @@ This project uses modern, actively maintained libraries:
 }
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 - `src/` — source code folder (main logic)
 - `helpers.ts` — helper functions
@@ -159,7 +159,7 @@ This project uses modern, actively maintained libraries:
 - `.github/workflows/` — CI/CD configuration
 - `.gitignore` — excludes node_modules, dist and temporary files from git
 
-## Installing Dependencies
+## 📦 Installing Dependencies
 
 All necessary dependencies are installed via npm:
 
@@ -167,7 +167,7 @@ All necessary dependencies are installed via npm:
 npm install
 ```
 
-## Development
+## 💻 Development
 
 ```bash
 # Install dependencies
@@ -192,33 +192,31 @@ npm run lint:fix
 npm run dev
 ```
 
-## Recommendations
+## 💡 Recommendations
 
-- To add new formats, you'll need to add the corresponding library and handler to the main file.
-- For n8n integration, make sure the node is correctly connected to your system.
-- For working with very large PDF, XLSX files, use preprocessing or third-party tools.
-- For security, always update dependencies and keep sanitize-html up to date.
-- Regularly check for vulnerabilities using `npm audit`.
+- To add new formats, you'll need to add the corresponding library and handler to the main file
+- For n8n integration, make sure the node is correctly connected to your system
+- For working with very large PDF, XLSX files, use preprocessing or third-party tools
+- For security, always update dependencies and keep sanitize-html up to date
+- Regularly check for vulnerabilities using `npm audit`
 
-## Build and Use with TypeScript
+## 🔨 Build and Use with TypeScript
 
 1. To build the project, run:
    ```bash
    npm run build
    ```
    The resulting files will appear in the `dist/` folder.
-2. To use the custom node in n8n, specify the path to `dist/FileToJsonNode.node.js`.
-3. Main file for n8n is now: `dist/FileToJsonNode.node.js` (see `main` field in package.json).
 
-## 🚀 For use in n8n:
+2. To use the custom node in n8n, specify the path to `dist/FileToJsonNode.node.js`.
+
+3. Main file for n8n: `dist/FileToJsonNode.node.js` (see `main` field in package.json).
+
+## 🚀 Usage in n8n
+
+**Update v1.0.10**: Fixed support for ODT, ODP, ODS, JSON formats + improved architecture ✅
 
 ### Option 1: Install as npm package (recommended)
-
-**Update v1.0.8**: Added ODT, ODP, ODS, JSON support + improved architecture ✅
-
-```bash
-npm install @mazix/n8n-nodes-converter-documents
-```
 
 Or via n8n web interface:
 1. Open Settings → Community nodes
@@ -229,7 +227,7 @@ Or via n8n web interface:
 
 1. **Create standalone version:**
    ```bash
-   git clone https://github.com/mazix/n8n-node-converter-documents.git
+   git clone https://github.com/mazixs/n8n-node-converter-documents.git
    cd n8n-node-converter-documents
    npm install
    npm run standalone
@@ -274,13 +272,13 @@ Then copy only the main node file:
 cp dist/FileToJsonNode.node.js ~/.n8n/custom-nodes/
 ```
 
-## ⚠️ Troubleshooting
+## 🔧 Troubleshooting
 
 If you see an error `Cannot find module 'exceljs'` (or other modules):
 
 1. **Use standalone version** - this is the most reliable method
 2. Make sure dependencies are installed in the correct folder
-3. Check access permissions to ~/.n8n/custom-nodes/ folder
+3. Check access permissions to `~/.n8n/custom-nodes/` folder
 4. Use npm package option instead of custom nodes
 
 ### Installation Check
@@ -295,13 +293,25 @@ cd ~/.n8n/custom-nodes/n8n-node-converter-documents/
 npm list
 ```
 
-## Supported File Formats
+## 📋 Supported File Formats
 
 - **Text formats:** DOCX, ODT, TXT, PDF
 - **Spreadsheet formats:** XLSX, ODS, CSV *(XLS is not supported - please convert to XLSX)*
 - **Presentation formats:** PPTX, ODP *(PPT is not supported - please convert to PPTX)*
 - **Web formats:** HTML, HTM
 - **Data formats:** XML, JSON (with structure normalization)
+
+## 📈 Latest Updates
+
+### v1.0.10 (2025-06-20)
+- **🐛 Critical Fix**: Restored support for ODT, ODP, ODS and JSON formats
+- Fixed "Unsupported file type" error for these formats
+- Format handlers were implemented but not accessible due to configuration oversight
+
+### v1.0.9 (2025-06-20)
+- **🔧 CI/CD**: Fixed Jest compatibility issues
+- Updated Jest command parameters for Jest 30+ compatibility
+- All CI tests now pass successfully
 
 ---
 

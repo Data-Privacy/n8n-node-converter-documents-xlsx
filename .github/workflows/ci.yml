@@ -8,8 +8,15 @@ on:
   workflow_call:
     # Позволяет вызывать этот workflow из других workflows
 
+# Рекомендуемые разрешения для безопасности
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 env:
   NODE_ENV: test
+  FORCE_COLOR: 3  # Для лучшего вывода в логах
 
 jobs:
   test:
@@ -30,6 +37,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        check-latest: true
         
     - name: Install Dependencies
       run: npm ci
@@ -62,18 +70,21 @@ jobs:
         file: ./coverage/lcov.info
         flags: unittests,integrationtests
         name: codecov-${{ matrix.node-version }}
-        fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
+        verbose: true
 
     - name: Archive Test Results
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.node-version }}-${{ github.sha }}
+        name: test-results-node-${{ matrix.node-version }}-${{ github.run_id }}
         path: |
           coverage/
           test-results.xml
         retention-days: 30
+        compression-level: 6
+        if-no-files-found: warn
 
   security:
     name: Security Audit
@@ -88,6 +99,7 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
+        check-latest: true
         
     - name: Install Dependencies
       run: npm ci
@@ -131,6 +143,7 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
+        check-latest: true
         
     - name: Install Dependencies
       run: npm ci
@@ -169,12 +182,14 @@ jobs:
     - name: Archive Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts-${{ github.sha }}
+        name: build-artifacts-${{ github.run_id }}
         path: |
           dist/
           bundle/
           standalone/
         retention-days: 7
+        compression-level: 9
+        if-no-files-found: error
 
   compatibility:
     name: Format Compatibility Test
@@ -190,6 +205,7 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
+        check-latest: true
         
     - name: Install Dependencies
       run: npm ci
