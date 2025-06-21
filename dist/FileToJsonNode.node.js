@@ -180,7 +180,7 @@ function flattenJsonObject(obj, prefix = '', result = {}) {
 function processYandexMarketYml(parsed) {
     try {
         const catalog = parsed.yml_catalog;
-        const shop = catalog.shop[0] || catalog.shop;
+        const shop = Array.isArray(catalog.shop) ? catalog.shop[0] : catalog.shop;
         // Извлекаем основную информацию о магазине
         const shopInfo = {
             name: shop.name?.[0] || shop.name || 'Unknown Shop',
@@ -207,7 +207,7 @@ function processYandexMarketYml(parsed) {
                 : [shop.categories[0].category];
             categories.push(...categoryList.map((cat) => ({
                 id: cat.$.id || cat.id,
-                name: cat._ || cat.name || cat,
+                name: cat._ || cat.name || String(cat),
                 parentId: cat.$.parentId || cat.parentId || null
             })));
         }
@@ -245,14 +245,14 @@ function processYandexMarketYml(parsed) {
                 // Обрабатываем картинки
                 if (offer.picture) {
                     const pictures = Array.isArray(offer.picture) ? offer.picture : [offer.picture];
-                    offerData.pictures = pictures.map((pic) => pic._ || pic || '');
+                    offerData.pictures = pictures.map((pic) => pic || '');
                 }
                 // Обрабатываем параметры
                 if (offer.param) {
                     const params = Array.isArray(offer.param) ? offer.param : [offer.param];
                     offerData.parameters = params.map((param) => ({
                         name: param.$.name || param.name,
-                        value: param._ || param.value || param,
+                        value: param._ || param.value || String(param),
                         unit: param.$.unit || param.unit || null
                     }));
                 }
