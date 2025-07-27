@@ -388,7 +388,7 @@ const strategies = {
             throw new errors_1.ProcessingError(`ODS processing error: ${error instanceof Error ? error.message : String(error)}`);
         }
     },
-    xlsx: async (buf) => {
+    xlsx: async (buf, ext, options) => {
         // Пробуем сначала officeparser, затем ExcelJS как fallback
         try {
             const _text = await (0, helpers_1.extractViaOfficeParser)(buf);
@@ -404,13 +404,21 @@ const strategies = {
             workbook.eachSheet((worksheet, _sheetId) => {
                 const sheetName = worksheet.name;
                 const jsonData = [];
-                worksheet.eachRow((row, _rowNumber) => {
+                worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
                     const rowData = {};
-                    row.eachCell((cell, colNumber) => {
-                        const columnLetter = numberToColumn(colNumber - 1);
-                        rowData[columnLetter] = cell.value;
+                    let hasData = false;
+                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                        const columnLetter = numberToColumn(colNumber);
+                        if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
+                            rowData[columnLetter] = cell.value;
+                            hasData = true;
+                        }
                     });
-                    if (Object.keys(rowData).length > 0) {
+                    // Only include rows that have actual data
+                    if (hasData) {
+                        if (options?.includeOriginalRowNumbers) {
+                            rowData.origRow = rowNumber;
+                        }
                         jsonData.push(rowData);
                     }
                 });
@@ -419,13 +427,13 @@ const strategies = {
             return { sheets };
         }
     },
-    csv: async (buf) => {
+    csv: async (buf, ext, options) => {
         const encoding = chardet_1.default.detect(buf) || "utf-8";
         const decoded = iconv_lite_1.default.decode(buf, encoding);
         if (buf.length > CSV_STREAM_SIZE_LIMIT) {
             return streamCsvStrategy(decoded);
         }
-        return processExcel(decoded, "csv");
+        return processExcel(decoded, "csv", options);
     },
     pdf: async (buf) => {
         // Используем officeparser вместо pdf-parse (officeparser использует pdf.js с 2024/05/06)
@@ -505,7 +513,7 @@ async function streamCsvStrategy(data) {
         });
     });
 }
-async function processExcel(data, ext) {
+async function processExcel(data, ext, options) {
     const workbook = new ExcelJS.Workbook();
     if (ext === "csv") {
         // Для CSV используем Papa Parse (уже реализовано в streamCsvStrategy)
@@ -519,13 +527,21 @@ async function processExcel(data, ext) {
     workbook.eachSheet((worksheet, _sheetId) => {
         const sheetName = worksheet.name;
         const jsonData = [];
-        worksheet.eachRow((row, _rowNumber) => {
+        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
             const rowData = {};
-            row.eachCell((cell, colNumber) => {
+            let hasData = false;
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
                 const columnLetter = numberToColumn(colNumber);
-                rowData[columnLetter] = cell.value;
+                if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
+                    rowData[columnLetter] = cell.value;
+                    hasData = true;
+                }
             });
-            if (Object.keys(rowData).length > 0) {
+            // Only include rows that have actual data
+            if (hasData) {
+                if (options?.includeOriginalRowNumbers) {
+                    rowData.origRow = rowNumber;
+                }
                 jsonData.push(rowData);
             }
         });
@@ -593,6 +609,18 @@ class FileToJsonNode {
                         maxValue: 10
                     }
                 },
+                {
+                    displayName: "Include Original Row Numbers",
+                    name: "includeOriginalRowNumbers",
+                    type: "boolean",
+                    default: false,
+                    description: "For Excel files, include the original row number from the source file in the 'origRow' property",
+                    displayOptions: {
+                        show: {
+                        // Only show this option when processing files that could be Excel
+                        }
+                    }
+                },
             ],
         };
     }
@@ -620,6 +648,7 @@ class FileToJsonNode {
         ];
         const maxFileSize = this.getNodeParameter('maxFileSize', 0, 50) * 1024 * 1024; // MB в байты
         const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4);
+        const includeOriginalRowNumbers = this.getNodeParameter('includeOriginalRowNumbers', 0, false);
         const processItem = async (item, i) => {
             const prop = this.getNodeParameter("binaryPropertyName", i, "data");
             // --- Input data validation ---
@@ -672,7 +701,10 @@ class FileToJsonNode {
                 if (!strategies[ext]) {
                     throw new errors_1.UnsupportedFormatError(`Format "${ext}" is not supported`);
                 }
-                json = await strategies[ext](buf, ext);
+                const options = {
+                    includeOriginalRowNumbers
+                };
+                json = await strategies[ext](buf, ext, options);
             }
             catch (e) {
                 throw new errors_1.ProcessingError(`${ext.toUpperCase()} processing error: ${e.message}`);

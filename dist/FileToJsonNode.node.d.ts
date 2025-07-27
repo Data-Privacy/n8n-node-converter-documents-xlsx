@@ -23,6 +23,7 @@ declare class FileToJsonNode {
             default: string;
             description: string;
             typeOptions?: undefined;
+            displayOptions?: undefined;
         } | {
             displayName: string;
             name: string;
@@ -33,6 +34,17 @@ declare class FileToJsonNode {
                 minValue: number;
                 maxValue: number;
             };
+            displayOptions?: undefined;
+        } | {
+            displayName: string;
+            name: string;
+            type: string;
+            default: boolean;
+            description: string;
+            displayOptions: {
+                show: {};
+            };
+            typeOptions?: undefined;
         })[];
     };
     /**
