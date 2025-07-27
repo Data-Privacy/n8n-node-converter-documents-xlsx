@@ -50,6 +50,10 @@ interface JsonSheetResult {
 
 type JsonResult = JsonTextResult | JsonSheetResult;
 
+interface ProcessingOptions {
+  includeOriginalRowNumbers?: boolean;
+}
+
 /**
  * Безопасная валидация и очистка имени файла
  */
@@ -349,7 +353,7 @@ function processYandexMarketYml(parsed: YmlCatalog): Partial<JsonResult> {
 }
 
 // Стратегии обработки форматов
-const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<JsonResult>>> = {
+const strategies: Record<string, (buf: Buffer, ext?: string, options?: ProcessingOptions) => Promise<Partial<JsonResult>>> = {
   doc: async (buf) => {
     try {
       // Проверяем, является ли это старым DOC файлом (CFB формат)
@@ -458,7 +462,7 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
     }
   },
 
-  xlsx: async (buf) => {
+  xlsx: async (buf, ext, options) => {
     // Пробуем сначала officeparser, затем ExcelJS как fallback
     try {
       const _text = await extractViaOfficeParser(buf);
@@ -473,13 +477,23 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
       workbook.eachSheet((worksheet, _sheetId) => {
         const sheetName = worksheet.name;
         const jsonData: unknown[] = [];
-        worksheet.eachRow((row, _rowNumber) => {
+        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
           const rowData: Record<string, unknown> = {};
-          row.eachCell((cell, colNumber) => {
-            const columnLetter = numberToColumn(colNumber - 1);
-            rowData[columnLetter] = cell.value;
+          let hasData = false;
+          
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const columnLetter = numberToColumn(colNumber);
+            if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
+              rowData[columnLetter] = cell.value;
+              hasData = true;
+            }
           });
-          if (Object.keys(rowData).length > 0) {
+          
+          // Only include rows that have actual data
+          if (hasData) {
+            if (options?.includeOriginalRowNumbers) {
+              rowData.origRow = rowNumber;
+            }
             jsonData.push(rowData);
           }
         });
@@ -488,13 +502,13 @@ const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<
       return { sheets };
     }
   },
-  csv: async (buf) => {
+  csv: async (buf, ext, options) => {
     const encoding = chardet.detect(buf) || "utf-8";
     const decoded = iconv.decode(buf, encoding);
     if (buf.length > CSV_STREAM_SIZE_LIMIT) {
       return streamCsvStrategy(decoded);
     }
-    return processExcel(decoded, "csv");
+    return processExcel(decoded, "csv", options);
   },
   pdf: async (buf) => {
     // Используем officeparser вместо pdf-parse (officeparser использует pdf.js с 2024/05/06)
@@ -581,7 +595,7 @@ async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
   });
 }
 
-async function processExcel(data: Buffer | string, ext: string): Promise<Partial<JsonResult>> {
+async function processExcel(data: Buffer | string, ext: string, options?: ProcessingOptions): Promise<Partial<JsonResult>> {
   const workbook = new ExcelJS.Workbook();
   
   if (ext === "csv") {
@@ -596,13 +610,23 @@ async function processExcel(data: Buffer | string, ext: string): Promise<Partial
   workbook.eachSheet((worksheet, _sheetId) => {
     const sheetName = worksheet.name;
     const jsonData: unknown[] = [];
-    worksheet.eachRow((row, _rowNumber) => {
+    worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
       const rowData: Record<string, unknown> = {};
-      row.eachCell((cell, colNumber) => {
+      let hasData = false;
+      
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         const columnLetter = numberToColumn(colNumber);
-        rowData[columnLetter] = cell.value;
+        if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
+          rowData[columnLetter] = cell.value;
+          hasData = true;
+        }
       });
-      if (Object.keys(rowData).length > 0) {
+      
+      // Only include rows that have actual data
+      if (hasData) {
+        if (options?.includeOriginalRowNumbers) {
+          rowData.origRow = rowNumber;
+        }
         jsonData.push(rowData);
       }
     });
@@ -671,6 +695,18 @@ class FileToJsonNode {
           maxValue: 10
         }
       },
+      {
+        displayName: "Include Original Row Numbers",
+        name: "includeOriginalRowNumbers",
+        type: "boolean",
+        default: false,
+        description: "For Excel files, include the original row number from the source file in the 'origRow' property",
+        displayOptions: {
+          show: {
+            // Only show this option when processing files that could be Excel
+          }
+        }
+      },
     ],
   };
 
@@ -698,6 +734,7 @@ class FileToJsonNode {
     ];
     const maxFileSize = (this.getNodeParameter('maxFileSize', 0, 50) as number) * 1024 * 1024; // MB в байты
     const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4) as number;
+    const includeOriginalRowNumbers = this.getNodeParameter('includeOriginalRowNumbers', 0, false) as boolean;
 
     const processItem = async (item: unknown, i: number) => {
       const prop = this.getNodeParameter("binaryPropertyName", i, "data");
@@ -757,7 +794,10 @@ class FileToJsonNode {
         if (!strategies[ext]) {
           throw new UnsupportedFormatError(`Format "${ext}" is not supported`);
         }
-        json = await strategies[ext](buf, ext);
+        const options: ProcessingOptions = {
+          includeOriginalRowNumbers
+        };
+        json = await strategies[ext](buf, ext, options);
       } catch (e) {
         throw new ProcessingError(`${ext.toUpperCase()} processing error: ${(e as Error).message}`);
       }
