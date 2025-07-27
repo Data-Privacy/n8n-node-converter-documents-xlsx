@@ -52,4 +52,5 @@ declare class FileToJsonNode {
      */
     execute(this: IExecuteFunctions): Promise<unknown[]>;
 }
-export { FileToJsonNode };
+declare const nodeClass: typeof FileToJsonNode;
+export { nodeClass as FileToJsonNode };

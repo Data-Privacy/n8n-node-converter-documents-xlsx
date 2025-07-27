@@ -1,0 +1,123 @@
+{
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "N8N Node Output with Original Row Numbers",
+    "description": "Schema for n8n node output that includes the original row number for each data entry from a file.",
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sheets": {
+                "type": "object",
+                "description": "Contains data for each sheet, with sheet names as keys.",
+                "patternProperties": {
+                  ".*": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "origRow": {
+                          "type": "integer",
+                          "description": "The original row number from the source file."
+                        }
+                      },
+                      "required": ["origRow"],
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "fileName": { "type": "string" },
+                  "fileSize": { "type": "integer" },
+                  "fileType": { "type": "string" },
+                  "processedAt": { "type": "string", "format": "date-time" }
+                },
+                "required": ["fileName", "fileSize", "fileType", "processedAt"]
+              }
+            },
+            "required": ["sheets", "metadata"]
+          }
+        },
+        "totalFiles": { "type": "integer" },
+        "processedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["files", "totalFiles", "processedAt"]
+    }
+  },
+  "sampleOutput": [
+    {
+      "files": [
+        {
+          "sheets": {
+            "Document Control": [
+              {
+                "origRow": 1,
+                "A": "Document Control "
+              },
+              {
+                "origRow": 2,
+                "A": "Document Title",
+                "B": "Record of Processing Activities"
+              },
+              {
+                "origRow": 3,
+                "A": "Document Type ",
+                "B": "Register"
+              }
+            ],
+            "1. Cover Sheet Template": [
+              {
+                "origRow": 1,
+                "A": "[Organisation name] Record of Processing Activities",
+                "B": "[Organisation name] Record of Processing Activities"
+              },
+              {
+                "origRow": 2,
+                "A": "Controller Details",
+                "B": "Controller Details"
+              }
+            ],
+            "5. RoPA Example ": [
+              {
+                "origRow": 1,
+                "A": "Process Overview",
+                "B": "Process Overview",
+                "C": "Process Overview"
+              },
+              {
+                "origRow": 2,
+                "A": "#",
+                "B": "Business Function / Department ",
+                "C": " Name and Contact Details of the Process Owner"
+              },
+              {
+                "origRow": 3,
+                "A": 1,
+                "B": "Human Resources",
+                "C": "[Name, Tel. Number and Email ]"
+              }
+            ]
+          },
+          "metadata": {
+            "fileName": "Record%20of%20Processing%20Activities%20-%20Template%20for%20Regulated%20Entities%20%28English%29%20V1.01.xlsx",
+            "fileSize": 308455,
+            "fileType": "xlsx",
+            "processedAt": "2025-07-27T11:53:15.174Z"
+          }
+        }
+      ],
+      "totalFiles": 1,
+      "processedAt": "2025-07-27T11:53:15.179Z"
+    }
+  ]
+}

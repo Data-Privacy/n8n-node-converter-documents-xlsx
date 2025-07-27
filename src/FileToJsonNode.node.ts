@@ -839,4 +839,6 @@ class FileToJsonNode {
   }
 }
 
-export { FileToJsonNode };
+// Export for n8n
+const nodeClass = FileToJsonNode;
+export { nodeClass as FileToJsonNode };

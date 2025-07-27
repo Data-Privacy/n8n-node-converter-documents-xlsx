@@ -1,0 +1,394 @@
+[
+  {
+    "files": [
+      {
+        "sheets": {
+          "Document Control": [
+            {
+              "A": "Document Control "
+            },
+            {
+              "A": "Document Title",
+              "B": "Record of Processing Activities"
+            },
+            {
+              "A": "Document Type ",
+              "B": "Register"
+            },
+            {
+              "A": "Version",
+              "B": "V1.01"
+            },
+            {
+              "A": "Document Reference",
+              "B": "PDPPL-02050503E"
+            },
+            {
+              "A": "Document Owner ",
+              "B": "CDP"
+            },
+            {
+              "A": "Document Classification",
+              "B": "External"
+            },
+            {
+              "A": "Document History "
+            },
+            {
+              "A": "Version Number ",
+              "B": "Description ",
+              "C": "Date"
+            },
+            {
+              "A": 1.01,
+              "B": "Published V1.01 document",
+              "C": "2020-11-01T00:00:00.000Z"
+            },
+            {
+              "A": "Related Documents "
+            },
+            {
+              "A": "Document Reference ",
+              "B": "Document Title ",
+              "C": "Document Title "
+            },
+            {
+              "A": "PDPPL-02050212E",
+              "B": "Record of Processing Activities Guidelines for Regulated Entities (English)",
+              "C": "Record of Processing Activities Guidelines for Regulated Entities (English)"
+            }
+          ],
+          "1. Cover Sheet Template": [
+            {
+              "A": "[Organisation name] Record of Processing Activities",
+              "B": "[Organisation name] Record of Processing Activities"
+            },
+            {
+              "A": "Controller Details",
+              "B": "Controller Details"
+            },
+            {
+              "A": "The legal name of the controller"
+            },
+            {
+              "A": "The registered address of the controller"
+            },
+            {
+              "A": "Email of the controller"
+            },
+            {
+              "A": "Phone number of the controller"
+            },
+            {
+              "A": "Data Privacy Ownership Details",
+              "B": "Data Privacy Ownership Details"
+            },
+            {
+              "A": "Name of person or team responsible for data privacy in the controller's organisation"
+            },
+            {
+              "A": "Email for the person or team responsible for data privacy in the controller's organisation"
+            },
+            {
+              "A": "Phone number of the person or team responsible for data privacy in the controller's organisation"
+            }
+          ],
+          "2. RoPA Template": [
+            {
+              "A": "Process Overview",
+              "B": "Process Overview",
+              "C": "Process Overview",
+              "D": "Process Overview",
+              "E": "Process Overview",
+              "F": "Categories of Personal Data ",
+              "G": "Categories of a Special Nature ",
+              "H": "Source of Personal Data ",
+              "I": "Category of Individual ",
+              "J": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "K": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "L": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "M": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "N": "Data Privacy Impact Assessment (DPIA)",
+              "O": "Internal Parties Data is Shared With",
+              "P": "Internal Parties Data is Shared With",
+              "Q": "External Parties Personal Data is Shared With",
+              "R": "External Parties Personal Data is Shared With",
+              "S": "External Parties Personal Data is Shared With",
+              "T": "External Parties Personal Data is Shared With",
+              "U": "Security Measures ",
+              "V": "Retention Period ",
+              "W": "Storage Location ",
+              "X": "Breach Records"
+            },
+            {
+              "A": "#",
+              "B": "Business Function / Department ",
+              "C": " Name and Contact Details of the Process Owner",
+              "D": "Name of Processing Activity",
+              "E": "Purpose for Processing ",
+              "F": "E.g. Name, DoB, Address, Email ID, Contact Number, Bank Account Details, Passport/Visa/Work Permits, Credit Card Information etc.  ",
+              "G": "Personal Data Relating to: \nEthnic origin, Children, Health, physical or psychological condition, Religious Creeds, Marital Relations, Criminal Offences and / or Biometrics.",
+              "H": "E.g. Direct From the Individual, From a Third Party, From a Public Register etc. ",
+              "I": "E.g. Employees, Customers, Others (specify)",
+              "J": "Permitted Reasons for Processing Activity",
+              "K": "Additional condition for processing personal data of a special nature (if applicable)",
+              "L": "Case or Purpose for Exemption",
+              "M": "Additional Information \ne.g. Details of Legitimate Interests or Consent",
+              "N": "DPIA Reference \n(Where Possible, Provide a Link or Reference Number to the DPIA or Documented Decision that DPIA is Not Necessary)",
+              "O": "Business Function / Department Personal Data is Shared With",
+              "P": "Geographical Location(s) of Internal Parties",
+              "Q": "Names or Categories of the Third Parties Personal Data is Shared With",
+              "R": "Contract Reference \n(Where Possible, Include the Contract Reference Number(s)",
+              "S": "Does This Process Involve Any Cross-Border Data Flows? (Yes/No)",
+              "T": "Safeguards for Restricted Transfers of Personal Data to Locations Outside Qatar (incl. Qatar Free Zones) (if applicable)",
+              "U": "General Description of Administrative, Financial and Technical Precautions",
+              "V": "Retention Period (Length of Time Personal Data is Kept For)",
+              "W": "Where the Personal Data is Stored",
+              "X": "Documentation Recording Any Breaches Impacting This Process"
+            }
+          ],
+          "3. Notes": [
+            {
+              "A": "Notes"
+            },
+            {
+              "A": "Use this template to document the processing activities you undertake as a controller."
+            },
+            {
+              "A": "Headings highlighted in blue relate to information about the purpose of the processing and ownership."
+            },
+            {
+              "A": "Headings highlighted in the dark and light red colour relate to information about the process itself."
+            },
+            {
+              "A": "Instructions"
+            },
+            {
+              "A": "1.    On the template cover sheet complete the controllers details (name, address, email, and phone number) in cells C4-C7."
+            },
+            {
+              "A": "2.   On the template cover sheet complete the Data Privacy Ownership Details (name, email, and phone number of the person responsible for data privacy at your organisation) in cells C9 - C 11."
+            },
+            {
+              "A": "3.   Document your organisation’s processing activities, starting in cell C5 (in the RoPA tab), and working from left to right. Where necessary use multiple rows for each processing activity in order to be as granular as possible (see Template example and RoPA example tab)."
+            },
+            {
+              "A": "Guidance"
+            },
+            {
+              "A": "For detailed guidance on Registers of Processing Activities (RoPAs), please see the RoPA Guidelines published by the CDP."
+            }
+          ],
+          "4. Cover Sheet Example ": [
+            {
+              "A": "[Organisation name] Register of Processing Activities",
+              "B": "[Organisation name] Register of Processing Activities"
+            },
+            {
+              "A": "Controller Details",
+              "B": "Controller Details"
+            },
+            {
+              "A": "The legal name of the controller",
+              "B": "Example Controller : Name of Entity"
+            },
+            {
+              "A": "The registered address of the controller",
+              "B": "Example Controller, PO Box 00000, Example Street, Doha, State of Qatar"
+            },
+            {
+              "A": "Email for the controller",
+              "B": "contactus@controllerwebdomain.qr"
+            },
+            {
+              "A": "Phone number of the controller",
+              "B": "+974 0000 0000"
+            },
+            {
+              "A": "Data Privacy Ownership Details",
+              "B": "Data Privacy Ownership Details"
+            },
+            {
+              "A": "Name of person or team responsible for data privacy",
+              "B": "Firstname Surname"
+            },
+            {
+              "A": "Email for the person or team responsible for data privacy",
+              "B": "firstname.surname@controllerwebdomain.qr"
+            },
+            {
+              "A": "Phone number of the person or team responsible for data privacy",
+              "B": "+974 0000 0000"
+            }
+          ],
+          "5. RoPA Example ": [
+            {
+              "A": "Process Overview",
+              "B": "Process Overview",
+              "C": "Process Overview",
+              "D": "Process Overview",
+              "E": "Process Overview",
+              "F": "Categories of Personal Data ",
+              "G": "Categories of a Special Nature ",
+              "H": "Source of Personal Data ",
+              "I": "Category of Individual ",
+              "J": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "K": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "L": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "M": "Permitted Reason for Processing (including exemptions under Art 18 and 19)",
+              "N": "Data Privacy Impact Assessment (DPIA)",
+              "O": "Internal Parties Data is Shared With",
+              "P": "Internal Parties Data is Shared With",
+              "Q": "External Parties Personal Data is Shared With",
+              "R": "External Parties Personal Data is Shared With",
+              "S": "External Parties Personal Data is Shared With",
+              "T": "External Parties Personal Data is Shared With",
+              "U": "Security Measures ",
+              "V": "Retention Period ",
+              "W": "Storage Location ",
+              "X": "Breach Records"
+            },
+            {
+              "A": "#",
+              "B": "Business Function / Department ",
+              "C": " Name and Contact Details of the Process Owner",
+              "D": "Name of Processing Activity",
+              "E": "Purpose for Processing ",
+              "F": "E.g. Name, DoB, Address, Email ID, Contact Number, Bank Account Details, Passport/Visa/Work Permits, Credit Card Information etc.  ",
+              "G": "Personal Data Relating to: \nEthnic origin, Children, Health, physical or psychological condition, Religious Creeds, Marital Relations, Criminal Offences and / or Biometrics.",
+              "H": "E.g. Direct From the Individual, From a Third Party, From a Public Register etc. ",
+              "I": "E.g. Employees, Customers, Others (specify)",
+              "J": "Permitted Reasons for Processing Activity",
+              "K": "Additional condition for processing personal data of a special nature (if applicable)",
+              "L": "Case or Purpose for Exemption",
+              "M": "Additional Information \ne.g. Details of Legitimate Interests or Consent",
+              "N": "DPIA Reference \n(Where Possible, Provide a Link or Reference Number to the DPIA or Documented Decision that DPIA is Not Necessary)",
+              "O": "Business Function / Department Personal Data is Shared With",
+              "P": "Geographical Location(s) of Internal Parties",
+              "Q": "Names or Categories of the Third Parties Personal Data is Shared With",
+              "R": "Contract Reference \n(Where Possible, Include the Contract Reference Number(s)",
+              "S": "Does This Process Involve Any Cross-Border Data Flows? (Yes/No)",
+              "T": "Safeguards for Restricted Transfers of Personal Data to Locations Outside Qatar (incl. Qatar Free Zones) (if applicable)",
+              "U": "General Description of Administrative, Financial and Technical Precautions",
+              "V": "Retention Period (Length of Time Personal Data is Kept For)",
+              "W": "Where the Personal Data is Stored",
+              "X": "Documentation Recording Any Breaches Impacting This Process"
+            },
+            {
+              "A": 1,
+              "B": "Human Resources",
+              "C": "[Name, Tel. Number and Email ]",
+              "D": "Recruitment ",
+              "E": "To hire and recruit new employees ",
+              "F": "Name, DoB, Email ID, Tel. Number, Passport details",
+              "G": "Martial Relations; whether the individual has any physical disabilities",
+              "H": "Recruitment agencies",
+              "I": "Employment Candidates",
+              "J": "Legitimate interest ",
+              "K": "Employment",
+              "L": "N/A",
+              "M": "N/A",
+              "N": "DPIA#00xx",
+              "O": "HR/Recruitment",
+              "P": "Qatar ",
+              "Q": "Recruitment agency [Name]",
+              "R": "Contract#00xx",
+              "S": "No",
+              "T": "N/A",
+              "U": "Contractual obligations, vendor audits, internal data storage and retention, strict access control",
+              "V": "2 years",
+              "W": "Shared drives and emails",
+              "X": "N/A"
+            },
+            {
+              "A": 2,
+              "B": "Finance and Business Operations",
+              "C": "[Name, Tel. Number and Email ]",
+              "D": "Invoice payment",
+              "E": "To pay of vendor invoices",
+              "F": "Vendor representative name and contact details ",
+              "G": "N/A",
+              "H": "Vendor Invoice",
+              "I": "Vendor representative",
+              "J": "Contractual obligation",
+              "K": "N/A",
+              "L": "N/A",
+              "M": "N/A",
+              "N": "DPIA#00xx",
+              "O": "Finance/ Accounts Payable",
+              "P": "Qatar ",
+              "Q": "Vendor (source of data)",
+              "R": "Relevant vendor contract(s)",
+              "S": "No",
+              "T": "N/A",
+              "U": "Document archiving and storage, access control, ERP controls",
+              "V": "2 years",
+              "W": "Shared Drives, Emails, Hard Copies in Cabinet, ERP System",
+              "X": "N/A"
+            },
+            {
+              "A": 3,
+              "B": "Facility Management\n",
+              "C": "[Name, Tel. Number and Email ]",
+              "D": "First aid training",
+              "E": "To train staff in first aid practices",
+              "F": "Name",
+              "G": "N/A",
+              "H": "Individual ",
+              "I": "Employees ",
+              "J": "Legitimate interest ",
+              "K": "N/A",
+              "L": "N/A",
+              "M": "N/A",
+              "N": "Not Necessary ",
+              "O": "None",
+              "P": "Qatar ",
+              "Q": "N/A",
+              "R": "N/A",
+              "S": "N/A",
+              "T": "N/A",
+              "U": "Personal data is not retained.",
+              "V": "N/A",
+              "W": "N/A",
+              "X": "N/A"
+            },
+            {
+              "A": 4,
+              "B": "Sales",
+              "C": "[Name, Tel. Number and Email ]",
+              "D": "Email marketing",
+              "E": "To carry out direct marketing",
+              "F": "Email ID, name, purchase history",
+              "G": "N/A",
+              "H": "Individual ",
+              "I": "Customer",
+              "J": "Explicit consent",
+              "K": "N/A",
+              "L": "N/A",
+              "M": "Consent collected on website with opt-in [insert link to consent form]",
+              "N": "DPIA#00xx",
+              "O": "Marketing",
+              "P": "Qatar ",
+              "Q": "N/A",
+              "R": "N/A",
+              "S": "N/A",
+              "T": "N/A",
+              "U": "Access control to the customer database, regular audits of the database",
+              "V": "2 years",
+              "W": "Server",
+              "X": "N/A"
+            }
+          ]
+        },
+        "metadata": {
+          "fileName": "Record%20of%20Processing%20Activities%20-%20Template%20for%20Regulated%20Entities%20%28English%29%20V1.01.xlsx",
+          "fileSize": 308455,
+          "fileType": "xlsx",
+          "processedAt": "2025-07-27T11:53:15.174Z"
+        }
+      }
+    ],
+    "totalFiles": 1,
+    "processedAt": "2025-07-27T11:53:15.179Z"
+  }
+]
