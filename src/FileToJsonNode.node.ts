@@ -655,14 +655,14 @@ async function processHtml(buf: Buffer): Promise<Partial<JsonResult>> {
  */
 class FileToJsonNode {
   description = {
-    displayName: "Convert File to JSON",
-    name: "convertFileToJson",
+    displayName: "Convert File to JSON (Enhanced)",
+    name: "convertFileToJsonEnhanced",
     icon: "file:icon.svg",
     group: ["transform"],
     version: 5,
     description:
-      "DOCX / XML / YML / XLSX / CSV / PDF / TXT / PPTX / HTML → JSON|text",
-    defaults: { name: "Convert File to JSON" },
+      "DOCX / XML / YML / XLSX / CSV / PDF / TXT / PPTX / HTML → JSON|text (with Excel row/column preservation)",
+    defaults: { name: "Convert File to JSON (Enhanced)" },
     inputs: ["main"],
     outputs: ["main"],
     properties: [
