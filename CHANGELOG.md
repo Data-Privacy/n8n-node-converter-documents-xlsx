@@ -1,5 +1,76 @@
 # Changelog
 
+## [1.1.5] - 2025-01-04
+
+### ✨ New Features
+- **Include Spreadsheet Name Toggle**: Added user-configurable option to control whether to include the original filename in each sheet object (default: enabled)
+- **Include Sheet Name Toggle**: Added user-configurable option to control whether to include the sheet name in each sheet object (default: enabled)
+- **Enhanced n8n Interface**: Added new toggle controls in the node configuration panel
+- **Flexible Output Structure**: Sheet objects now support dynamic metadata inclusion based on user preferences
+
+### 🔧 Technical Implementation
+- Extended `ProcessingOptions` interface with `includeSpreadsheetName` and `includeSheetName` parameters
+- Updated all sheet processing strategies (xlsx, csv, processExcel, streamCsvStrategy) to respect toggle settings
+- Implemented conditional object spreading for dynamic metadata inclusion
+- Added proper TypeScript type support for flexible sheet structures
+
+### 📊 Output Structure Examples
+
+**Full metadata (default behavior):**
+```json
+{
+  "sheets": {
+    "Sheet1": {
+      "spreadsheetName": "example.xlsx",
+      "sheetName": "Sheet1", 
+      "data": [{"A": "Value1", "B": "Value2"}]
+    }
+  }
+}
+```
+
+**Minimal output (both toggles disabled):**
+```json
+{
+  "sheets": {
+    "Sheet1": {
+      "data": [{"A": "Value1", "B": "Value2"}]
+    }
+  }
+}
+```
+
+### 🎯 Impact
+- **Backward Compatibility**: All new toggles default to enabled, maintaining existing workflow behavior
+- **User Control**: Users can now customize output structure based on their needs
+- **Data Efficiency**: Option to reduce output size by excluding unnecessary metadata
+- **Applies to**: Both XLSX and CSV file processing
+
+### 📁 Files Modified
+- `src/FileToJsonNode.node.ts`: Added toggle options and processing logic
+- `README.md`: Updated documentation with new features and examples
+- `package.json`: Version bump to 1.1.5
+
+---
+
+## [1.1.4] - 2025-01-04
+
+### ✨ New Features  
+- **Automatic Spreadsheet Name Inclusion**: Each sheet object now automatically includes the source spreadsheet filename
+- **Automatic Sheet Name Inclusion**: Each sheet object now includes the sheet name for better data lineage
+- **Enhanced Metadata Structure**: Improved data tracking capabilities
+
+### 🔧 Technical Changes
+- Modified xlsx and csv processing strategies to include filename metadata
+- Updated TypeScript interfaces to support new sheet structure
+- Enhanced processExcel function with metadata handling
+
+### 📊 Breaking Change
+- **Sheet Structure**: Changed from `sheets.SheetName: [...]` to `sheets.SheetName: {spreadsheetName, sheetName, data: [...]}`
+- **Migration**: Update downstream processes expecting the old array format
+
+---
+
 ## [1.0.11.1] - 2025-01-27
 
 ### 🔧 Bug Fixes

@@ -68,6 +68,8 @@ This approach provides:
 - Text or table extraction from popular office and text formats
 - **OpenDocument support**: ODT, ODP, ODS files from LibreOffice/OpenOffice
 - **JSON normalization**: Automatic flattening of nested JSON structures
+- **Excel row/column preservation**: Toggleable original Excel row numbers with proper column letter mapping
+- **Flexible sheet metadata**: User-configurable inclusion of spreadsheet name and sheet name in output
 - Output data: `{ text: "..." }` or `{ sheets: {...} }` + metadata (name, size, file type, processing time)
 - Large file processing (up to 50 MB for most formats)
 - Messages for empty or unsupported files
@@ -114,17 +116,47 @@ This project uses modern, actively maintained libraries:
 }
 ```
 
-### For tabular formats:
+### For tabular formats (with enhanced metadata):
 ```json
 {
   "sheets": {
-    "Sheet1": [ { "A": "Value1", "B": "Value2" }, ... ]
+    "Sheet1": {
+      "spreadsheetName": "example.xlsx",
+      "sheetName": "Sheet1",
+      "data": [ 
+        { "A": "Value1", "B": "Value2" },
+        { "A": "Value3", "B": "Value4" }
+      ]
+    },
+    "Sheet2": {
+      "spreadsheetName": "example.xlsx", 
+      "sheetName": "Sheet2",
+      "data": [
+        { "A": "Data1", "B": "Data2" }
+      ]
+    }
   },
   "metadata": {
     "fileName": "example.xlsx",
     "fileSize": 23456,
     "fileType": "xlsx",
     "processedAt": "2024-06-01T12:00:00.000Z"
+  }
+}
+```
+
+### Toggle Options for Sheet Metadata:
+- **Include Spreadsheet Name** (default: `true`): Adds `spreadsheetName` field to each sheet
+- **Include Sheet Name** (default: `true`): Adds `sheetName` field to each sheet  
+- **Include Original Row Numbers** (default: `false`): Adds `origRow` field to each data row
+
+**Example with toggles disabled:**
+```json
+{
+  "sheets": {
+    "Sheet1": {
+      "data": [ { "A": "Value1", "B": "Value2" } ]
+    }
   }
 }
 ```
@@ -346,6 +378,19 @@ npm list
 - **Data formats:** XML, JSON (with structure normalization)
 
 ## 📈 Latest Updates
+
+### v1.1.5 (2025-01-04)
+- **✨ New Features**: Added user-configurable sheet metadata toggles
+- **Include Spreadsheet Name** toggle: Control whether to include the original filename in each sheet object (default: enabled)
+- **Include Sheet Name** toggle: Control whether to include the sheet name in each sheet object (default: enabled)
+- **Enhanced Output Structure**: Sheet objects now support flexible metadata inclusion
+- **Backward Compatibility**: All new features default to enabled to maintain compatibility with existing workflows
+- **Applies to**: Both XLSX and CSV file processing
+
+### v1.1.4 (2025-01-04)
+- **🔧 Internal**: Added spreadsheet name and sheet name to output structure
+- **📊 Enhanced Metadata**: Each sheet now includes source file information
+- **🏗️ Architecture**: Improved processing pipeline for better metadata handling
 
 ### v1.0.10 (2025-06-20)
 - **🐛 Critical Fix**: Restored support for ODT, ODP, ODS and JSON formats
