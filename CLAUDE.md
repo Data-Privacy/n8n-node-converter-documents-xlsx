@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-Task: The current method of handling xlsx files does not return the exact row numbers from the original file in the JSON output. For example, in the file `.claude\sample-output-current.json`, the array does not include row numbers from the original file. I need the n8n user to have the option to output the original row number from the Excel file in the `origRow` JSON property. This option should be available through a toggle in the n8n node.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Current Task
+
+The current method of handling xlsx files does not return the exact row numbers from the original file in the JSON output. For example, in the file `.claude\sample-output-current.json`, the array does not include row numbers from the original file. I need the n8n user to have the option to output the original row number from the Excel file in the `origRow` JSON property. This option should be available through a toggle in the n8n node.
 
 I have created the JSON schema with this property and saved it in `.claude\desired-schema.json`. The new output should resemble `.claude\sample-output-desired.json`. It's important to note that the current XLSX conversion process skips some empty rows and columns at the start of the sheet. Therefore, the function must rely on the original file content, including any empty rows, instead of just considering the non-empty rows. Additionally, keep in mind that Excel rows are numbered starting from "1", and this numbering should be maintained. Consequently, the first item in the output JSON's array might begin with an `origRow` value of 2 and a column B (if there were empty rows or columns at the start of the Excel sheet). This functionality should ensure that the original row numbers are preserved, even if there are skipped empty rows or columns preceding the data or table.
-
-
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Commands
 
@@ -40,16 +40,19 @@ This is an n8n custom node that converts various document formats to JSON/text. 
 
 ### Strategy Pattern Implementation
 
-The codebase uses a strategy pattern in `FileToJsonNode.node.ts:352` where different file formats are handled by dedicated strategy functions:
+The codebase uses a strategy pattern in `FileToJsonNode.node.ts:356` where different file formats are handled by dedicated strategy functions:
 
 ```typescript
-const strategies: Record<string, (buf: Buffer, ext?: string) => Promise<Partial<JsonResult>>> = {
+const strategies: Record<string, (buf: Buffer, ext?: string, options?: ProcessingOptions) => Promise<Partial<JsonResult>>> = {
   docx: async (buf) => { /* DOCX processing */ },
   pdf: async (buf) => { /* PDF processing */ },
-  xlsx: async (buf) => { /* Excel processing */ },
+  xlsx: async (buf, ext, options) => { /* Excel processing with optional row numbers */ },
   // ... other formats
 }
 ```
+
+The `ProcessingOptions` interface supports:
+- `includeOriginalRowNumbers?: boolean` - For Excel files to include original row numbers from the spreadsheet
 
 ### Document Processing Pipeline
 
@@ -110,4 +113,10 @@ The node follows n8n conventions:
 - Strong focus on Yandex Market integration for e-commerce use cases
 - Comprehensive fallback strategies for robust document processing
 - Security-first approach with input validation and sanitization
+
+## important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 

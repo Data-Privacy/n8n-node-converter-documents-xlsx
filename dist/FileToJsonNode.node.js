@@ -388,7 +388,7 @@ const strategies = {
             throw new errors_1.ProcessingError(`ODS processing error: ${error instanceof Error ? error.message : String(error)}`);
         }
     },
-    xlsx: async (buf, ext, options) => {
+    xlsx: async (buf, ext, options, fileName) => {
         // Пробуем сначала officeparser, затем ExcelJS как fallback
         try {
             const _text = await (0, helpers_1.extractViaOfficeParser)(buf);
@@ -422,18 +422,21 @@ const strategies = {
                         jsonData.push(rowData);
                     }
                 });
-                sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
+                sheets[sheetName] = {
+                    spreadsheetName: fileName || 'unknown',
+                    data: (0, helpers_1.limitExcelSheet)(jsonData)
+                };
             });
             return { sheets };
         }
     },
-    csv: async (buf, ext, options) => {
+    csv: async (buf, ext, options, fileName) => {
         const encoding = chardet_1.default.detect(buf) || "utf-8";
         const decoded = iconv_lite_1.default.decode(buf, encoding);
         if (buf.length > CSV_STREAM_SIZE_LIMIT) {
-            return streamCsvStrategy(decoded);
+            return streamCsvStrategy(decoded, fileName);
         }
-        return processExcel(decoded, "csv", options);
+        return processExcel(decoded, "csv", options, fileName);
     },
     pdf: async (buf) => {
         // Используем officeparser вместо pdf-parse (officeparser использует pdf.js с 2024/05/06)
@@ -487,7 +490,7 @@ const strategies = {
     html: async (buf) => processHtml(buf),
     htm: async (buf) => processHtml(buf),
 };
-async function streamCsvStrategy(data) {
+async function streamCsvStrategy(data, fileName) {
     return new Promise((resolve, reject) => {
         const rows = [];
         let rowCount = 0;
@@ -505,7 +508,12 @@ async function streamCsvStrategy(data) {
                     ? `CSV truncated to ${CSV_STREAM_ROW_LIMIT} rows`
                     : undefined;
                 resolve({
-                    sheets: { Sheet1: rows },
+                    sheets: {
+                        Sheet1: {
+                            spreadsheetName: fileName || 'unknown',
+                            data: rows
+                        }
+                    },
                     warning,
                 });
             },
@@ -513,7 +521,7 @@ async function streamCsvStrategy(data) {
         });
     });
 }
-async function processExcel(data, ext, options) {
+async function processExcel(data, ext, options, fileName) {
     const workbook = new ExcelJS.Workbook();
     if (ext === "csv") {
         // Для CSV используем Papa Parse (уже реализовано в streamCsvStrategy)
@@ -545,7 +553,10 @@ async function processExcel(data, ext, options) {
                 jsonData.push(rowData);
             }
         });
-        sheets[sheetName] = (0, helpers_1.limitExcelSheet)(jsonData);
+        sheets[sheetName] = {
+            spreadsheetName: fileName || 'unknown',
+            data: (0, helpers_1.limitExcelSheet)(jsonData)
+        };
     });
     return { sheets };
 }
@@ -704,7 +715,7 @@ class FileToJsonNode {
                 const options = {
                     includeOriginalRowNumbers
                 };
-                json = await strategies[ext](buf, ext, options);
+                json = await strategies[ext](buf, ext, options, name);
             }
             catch (e) {
                 throw new errors_1.ProcessingError(`${ext.toUpperCase()} processing error: ${e.message}`);

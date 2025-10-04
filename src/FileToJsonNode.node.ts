@@ -353,7 +353,7 @@ function processYandexMarketYml(parsed: YmlCatalog): Partial<JsonResult> {
 }
 
 // Стратегии обработки форматов
-const strategies: Record<string, (buf: Buffer, ext?: string, options?: ProcessingOptions) => Promise<Partial<JsonResult>>> = {
+const strategies: Record<string, (buf: Buffer, ext?: string, options?: ProcessingOptions, fileName?: string) => Promise<Partial<JsonResult>>> = {
   doc: async (buf) => {
     try {
       // Проверяем, является ли это старым DOC файлом (CFB формат)
@@ -462,7 +462,7 @@ const strategies: Record<string, (buf: Buffer, ext?: string, options?: Processin
     }
   },
 
-  xlsx: async (buf, ext, options) => {
+  xlsx: async (buf, ext, options, fileName?) => {
     // Пробуем сначала officeparser, затем ExcelJS как fallback
     try {
       const _text = await extractViaOfficeParser(buf);
@@ -473,7 +473,7 @@ const strategies: Record<string, (buf: Buffer, ext?: string, options?: Processin
       // Используем ExcelJS для полной поддержки структуры Excel
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buf);
-      const sheets: Record<string, unknown[]> = {};
+      const sheets: Record<string, {spreadsheetName: string, data: unknown[]}> = {};
       workbook.eachSheet((worksheet, _sheetId) => {
         const sheetName = worksheet.name;
         const jsonData: unknown[] = [];
@@ -497,18 +497,21 @@ const strategies: Record<string, (buf: Buffer, ext?: string, options?: Processin
             jsonData.push(rowData);
           }
         });
-        sheets[sheetName] = limitExcelSheet(jsonData);
+        sheets[sheetName] = {
+          spreadsheetName: fileName || 'unknown',
+          data: limitExcelSheet(jsonData)
+        };
       });
       return { sheets };
     }
   },
-  csv: async (buf, ext, options) => {
+  csv: async (buf, ext, options, fileName) => {
     const encoding = chardet.detect(buf) || "utf-8";
     const decoded = iconv.decode(buf, encoding);
     if (buf.length > CSV_STREAM_SIZE_LIMIT) {
-      return streamCsvStrategy(decoded);
+      return streamCsvStrategy(decoded, fileName);
     }
-    return processExcel(decoded, "csv", options);
+    return processExcel(decoded, "csv", options, fileName);
   },
   pdf: async (buf) => {
     // Используем officeparser вместо pdf-parse (officeparser использует pdf.js с 2024/05/06)
@@ -568,7 +571,7 @@ const strategies: Record<string, (buf: Buffer, ext?: string, options?: Processin
   htm: async (buf) => processHtml(buf),
 };
 
-async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
+async function streamCsvStrategy(data: string, fileName?: string): Promise<Partial<JsonResult>> {
   return new Promise((resolve, reject) => {
     const rows: unknown[] = [];
     let rowCount = 0;
@@ -586,7 +589,12 @@ async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
           ? `CSV truncated to ${CSV_STREAM_ROW_LIMIT} rows`
           : undefined;
         resolve({
-          sheets: { Sheet1: rows },
+          sheets: { 
+            Sheet1: {
+              spreadsheetName: fileName || 'unknown',
+              data: rows
+            }
+          },
           warning,
         });
       },
@@ -595,7 +603,7 @@ async function streamCsvStrategy(data: string): Promise<Partial<JsonResult>> {
   });
 }
 
-async function processExcel(data: Buffer | string, ext: string, options?: ProcessingOptions): Promise<Partial<JsonResult>> {
+async function processExcel(data: Buffer | string, ext: string, options?: ProcessingOptions, fileName?: string): Promise<Partial<JsonResult>> {
   const workbook = new ExcelJS.Workbook();
   
   if (ext === "csv") {
@@ -606,7 +614,7 @@ async function processExcel(data: Buffer | string, ext: string, options?: Proces
     await workbook.xlsx.load(data as Buffer);
   }
   
-  const sheets: Record<string, unknown[]> = {};
+  const sheets: Record<string, {spreadsheetName: string, data: unknown[]}> = {};
   workbook.eachSheet((worksheet, _sheetId) => {
     const sheetName = worksheet.name;
     const jsonData: unknown[] = [];
@@ -630,7 +638,10 @@ async function processExcel(data: Buffer | string, ext: string, options?: Proces
         jsonData.push(rowData);
       }
     });
-    sheets[sheetName] = limitExcelSheet(jsonData);
+    sheets[sheetName] = {
+      spreadsheetName: fileName || 'unknown',
+      data: limitExcelSheet(jsonData)
+    };
   });
   return { sheets };
 }
@@ -797,7 +808,7 @@ class FileToJsonNode {
         const options: ProcessingOptions = {
           includeOriginalRowNumbers
         };
-        json = await strategies[ext](buf, ext, options);
+        json = await strategies[ext](buf, ext, options, name);
       } catch (e) {
         throw new ProcessingError(`${ext.toUpperCase()} processing error: ${(e as Error).message}`);
       }
