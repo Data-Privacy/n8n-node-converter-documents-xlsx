@@ -52,7 +52,7 @@ type JsonResult = JsonTextResult | JsonSheetResult;
 
 interface ProcessingOptions {
   includeOriginalRowNumbers?: boolean;
-  includeSpreadsheetName?: boolean;
+  includeFileName?: boolean;
   includeSheetName?: boolean;
   outputSheetsAsSeparateItems?: boolean;
 }
@@ -501,7 +501,7 @@ const strategies: Record<string, (buf: Buffer, ext?: string, options?: Processin
           }
         });
         const sheetData: any = {
-          ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+          ...((options?.includeFileName !== false) && { fileName: fileName || 'unknown' }),
           ...((options?.includeSheetName !== false) && { sheetName: sheetName }),
           data: limitExcelSheet(jsonData)
         };
@@ -594,7 +594,7 @@ async function streamCsvStrategy(data: string, fileName?: string, options?: Proc
           ? `CSV truncated to ${CSV_STREAM_ROW_LIMIT} rows`
           : undefined;
         const sheetData: any = {
-          ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+          ...((options?.includeFileName !== false) && { fileName: fileName || 'unknown' }),
           ...((options?.includeSheetName !== false) && { sheetName: 'Sheet1' }),
           data: rows
         };
@@ -646,7 +646,7 @@ async function processExcel(data: Buffer | string, ext: string, options?: Proces
       }
     });
     const sheetData: any = {
-      ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+      ...((options?.includeFileName !== false) && { fileName: fileName || 'unknown' }),
       ...((options?.includeSheetName !== false) && { sheetName: sheetName }),
       data: limitExcelSheet(jsonData)
     };
@@ -728,11 +728,11 @@ class FileToJsonNode {
         }
       },
       {
-        displayName: "Include Spreadsheet Name",
-        name: "includeSpreadsheetName",
+        displayName: "Include File Name",
+        name: "includeFileName",
         type: "boolean",
         default: true,
-        description: "Include the spreadsheet filename in each sheet object",
+        description: "Include the filename in each sheet object",
         displayOptions: {
           show: {
             // Only show this option when processing files that could be Excel or CSV
@@ -791,7 +791,7 @@ class FileToJsonNode {
     const maxFileSize = (this.getNodeParameter('maxFileSize', 0, 50) as number) * 1024 * 1024; // MB в байты
     const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4) as number;
     const includeOriginalRowNumbers = this.getNodeParameter('includeOriginalRowNumbers', 0, false) as boolean;
-    const includeSpreadsheetName = this.getNodeParameter('includeSpreadsheetName', 0, true) as boolean;
+    const includeFileName = this.getNodeParameter('includeFileName', 0, true) as boolean;
     const includeSheetName = this.getNodeParameter('includeSheetName', 0, true) as boolean;
     const outputSheetsAsSeparateItems = this.getNodeParameter('outputSheetsAsSeparateItems', 0, false) as boolean;
 
@@ -855,7 +855,7 @@ class FileToJsonNode {
         }
         const options: ProcessingOptions = {
           includeOriginalRowNumbers,
-          includeSpreadsheetName,
+          includeFileName,
           includeSheetName,
           outputSheetsAsSeparateItems
         };
@@ -904,32 +904,29 @@ class FileToJsonNode {
           for (const [sheetKey, sheetData] of Object.entries(sheets)) {
             if (sheetData && typeof sheetData === 'object' && 'data' in sheetData) {
               const separateItem: any = {
-                data: sheetData.data
+                rows: sheetData.data
               };
               
               // Add optional metadata based on toggles
-              if (includeSpreadsheetName && sheetData.spreadsheetName) {
-                separateItem.spreadsheetName = sheetData.spreadsheetName;
+              if (includeFileName && sheetData.fileName) {
+                separateItem.fileName = sheetData.fileName;
               }
               if (includeSheetName && sheetData.sheetName) {
                 separateItem.sheetName = sheetData.sheetName;
               }
               
-              // Add simplified metadata
-              separateItem.metadata = {
-                fileName: json.metadata?.fileName || null,
-                fileSize: json.metadata?.fileSize || null,
-                fileType: json.metadata?.fileType || null,
-                processedAt: json.metadata?.processedAt || new Date().toISOString()
-              };
+              // Add required metadata fields
+              separateItem.fileType = json.metadata?.fileType || null;
+              separateItem.fileSize = json.metadata?.fileSize || null;
+              separateItem.processedAt = json.metadata?.processedAt || new Date().toISOString();
               
-              separateItems.push({ json: separateItem });
+              separateItems.push(separateItem);
             }
           }
         }
       }
       
-      return [separateItems];
+      return separateItems;
     } else {
       // Объединяем все результаты в один item (current behavior)
       return [[{

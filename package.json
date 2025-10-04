@@ -1,7 +1,7 @@
 {
   "name": "@nerme/n8n-nodes-converter-documents-xlsx",
-  "version": "1.1.5",
-  "description": "Enhanced n8n document converter with Excel row/column preservation. Converts DOCX, XML, YML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML, JSON, ODT, ODP, ODS to JSON/text. Features toggleable original Excel row numbers and proper column letter mapping.",
+  "version": "1.1.6",
+  "description": "Enhanced n8n document converter with flexible sheet processing. Converts DOCX, XML, YML, XLS, XLSX, CSV, PDF, TXT, PPT, PPTX, HTML, JSON, ODT, ODP, ODS to JSON/text. Features individual sheet workflow items, toggleable metadata, Excel row/column preservation, and proper column letter mapping.",
   "main": "dist/FileToJsonNode.node.js",
   "scripts": {
     "build": "tsc && cp src/*.svg dist/ 2>nul || (copy src\\*.svg dist\\ 2>nul || exit 0)",

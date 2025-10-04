@@ -1,5 +1,98 @@
 # Changelog
 
+## [1.1.6] - 2025-01-04
+
+### 🚀 Major New Feature: Output Sheets as Separate Items
+
+#### ✨ New Functionality
+- **Individual Sheet Processing**: Added "Output Sheets as Separate Items" toggle that outputs each sheet as a separate n8n workflow item instead of grouped by file
+- **Perfect for n8n Workflows**: Enables sheet-level processing, parallel execution, and individual sheet transformations
+- **Text File Filtering**: PDF, DOCX, and other text-based files are automatically ignored when separate items mode is enabled
+- **Clean, Flat Structure**: Removed nested JSON wrappers for streamlined data access
+
+#### 🔧 Interface and Naming Improvements
+- **Toggle Renamed**: "Include Spreadsheet Name" → "Include File Name" 
+- **Parameter Renamed**: `includeSpreadsheetName` → `includeFileName`
+- **Key Unified**: `spreadsheetName` → `fileName` (they were identical values, now consistently named)
+- **Simplified Structure**: Removed redundant `"json"` wrapper from output
+- **Data Organization**: Changed `"data"` to `"rows"` array for clearer semantics
+
+#### 📊 New Output Structure
+
+**Individual Sheet Items Mode (when toggle enabled):**
+```json
+[
+  {
+    "fileName": "example.xlsx",
+    "sheetName": "Sheet1",
+    "fileType": "xlsx",
+    "fileSize": 23456,
+    "processedAt": "2025-01-04T12:00:00.000Z",
+    "rows": [
+      {"A": "Value1", "B": "Value2"},
+      {"A": "Value3", "B": "Value4"}
+    ]
+  },
+  {
+    "fileName": "example.xlsx",
+    "sheetName": "Sheet2", 
+    "fileType": "xlsx",
+    "fileSize": 23456,
+    "processedAt": "2025-01-04T12:00:00.000Z",
+    "rows": [
+      {"A": "Data1", "B": "Data2"}
+    ]
+  }
+]
+```
+
+**Standard Grouped Mode (default, unchanged):**
+```json
+[{
+  "json": {
+    "files": [
+      {
+        "sheets": {
+          "Sheet1": {
+            "fileName": "example.xlsx",
+            "sheetName": "Sheet1",
+            "data": [...]
+          }
+        }
+      }
+    ]
+  }
+}]
+```
+
+#### 🎯 Metadata Handling
+- **Always Included**: `fileType`, `fileSize`, `processedAt`, `rows`
+- **Conditionally Included**: `fileName` and `sheetName` based on their respective toggle settings
+- **Flat Structure**: All metadata at the same level as the rows data
+- **No Redundancy**: Eliminated duplicate information between fileName and spreadsheetName
+
+#### 🔄 Backward Compatibility
+- **Default Behavior**: New toggle defaults to `false`, maintaining existing grouped output
+- **Existing Workflows**: No breaking changes for current implementations
+- **Progressive Enhancement**: Users can opt-in to new functionality as needed
+
+#### 💼 Use Cases
+- **Parallel Processing**: Process different sheets simultaneously in n8n workflows
+- **Sheet-Level Filtering**: Apply different logic to different sheets
+- **Individual Transformations**: Transform each sheet with specific business rules
+- **Conditional Processing**: Skip or process sheets based on their content or name
+
+#### 📁 Files Modified
+- `src/FileToJsonNode.node.ts`: Complete overhaul of output logic and parameter handling
+- `package.json`: Version bump to 1.1.6
+- `README.md`: Updated documentation with new features and examples
+- `CHANGELOG.md`: This comprehensive changelog entry
+
+#### 🎉 Impact
+This release transforms the node from a file-centric processor to a flexible sheet-centric processor, opening up new possibilities for granular data processing in n8n workflows while maintaining full backward compatibility.
+
+---
+
 ## [1.1.5] - 2025-01-04
 
 ### ✨ New Features

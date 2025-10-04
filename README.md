@@ -69,7 +69,9 @@ This approach provides:
 - **OpenDocument support**: ODT, ODP, ODS files from LibreOffice/OpenOffice
 - **JSON normalization**: Automatic flattening of nested JSON structures
 - **Excel row/column preservation**: Toggleable original Excel row numbers with proper column letter mapping
-- **Flexible sheet metadata**: User-configurable inclusion of spreadsheet name and sheet name in output
+- **Flexible sheet metadata**: User-configurable inclusion of filename and sheet name in output
+- **Flexible output modes**: Choose between grouped file output or individual sheet items
+- **Sheet-level workflow processing**: Output each sheet as separate n8n workflow items for parallel processing
 - Output data: `{ text: "..." }` or `{ sheets: {...} }` + metadata (name, size, file type, processing time)
 - Large file processing (up to 50 MB for most formats)
 - Messages for empty or unsupported files
@@ -145,20 +147,62 @@ This project uses modern, actively maintained libraries:
 }
 ```
 
-### Toggle Options for Sheet Metadata:
-- **Include Spreadsheet Name** (default: `true`): Adds `spreadsheetName` field to each sheet
+### Toggle Options for Sheet Processing:
+- **Include File Name** (default: `true`): Adds `fileName` field to each sheet
 - **Include Sheet Name** (default: `true`): Adds `sheetName` field to each sheet  
 - **Include Original Row Numbers** (default: `false`): Adds `origRow` field to each data row
+- **Output Sheets as Separate Items** (default: `false`): Each sheet becomes a separate n8n workflow item
 
-**Example with toggles disabled:**
+### Standard Grouped Output (default):
 ```json
 {
   "sheets": {
     "Sheet1": {
+      "fileName": "example.xlsx",
+      "sheetName": "Sheet1",
       "data": [ { "A": "Value1", "B": "Value2" } ]
     }
   }
 }
+```
+
+### Individual Sheet Items Output (when "Output Sheets as Separate Items" enabled):
+```json
+[
+  {
+    "fileName": "example.xlsx",
+    "sheetName": "Sheet1",
+    "fileType": "xlsx",
+    "fileSize": 23456,
+    "processedAt": "2025-01-04T12:00:00.000Z",
+    "rows": [
+      { "A": "Value1", "B": "Value2" },
+      { "A": "Value3", "B": "Value4" }
+    ]
+  },
+  {
+    "fileName": "example.xlsx", 
+    "sheetName": "Sheet2",
+    "fileType": "xlsx",
+    "fileSize": 23456,
+    "processedAt": "2025-01-04T12:00:00.000Z",
+    "rows": [
+      { "A": "Data1", "B": "Data2" }
+    ]
+  }
+]
+```
+
+**Example with metadata toggles disabled:**
+```json
+[
+  {
+    "fileType": "xlsx",
+    "fileSize": 23456, 
+    "processedAt": "2025-01-04T12:00:00.000Z",
+    "rows": [ { "A": "Value1", "B": "Value2" } ]
+  }
+]
 ```
 
 ### For JSON normalization:
@@ -378,6 +422,17 @@ npm list
 - **Data formats:** XML, JSON (with structure normalization)
 
 ## 📈 Latest Updates
+
+### v1.1.6 (2025-01-04)
+- **🚀 Major Feature**: Added "Output Sheets as Separate Items" functionality
+- **Individual Sheet Processing**: Each sheet becomes a separate n8n workflow item for parallel processing
+- **Renamed Toggle**: "Include Spreadsheet Name" → "Include File Name" (parameter: `includeFileName`)
+- **Unified Naming**: `spreadsheetName` → `fileName` (fileName and spreadsheetName were identical)
+- **Flat Output Structure**: Removed nested wrappers, metadata at same level as data
+- **Clean Array Format**: Sheet data now in `rows` array instead of `data` object
+- **Text File Filtering**: PDF, DOCX, etc. automatically ignored in separate items mode
+- **Flexible Metadata**: Always includes fileType, fileSize, processedAt; conditionally includes fileName, sheetName
+- **Perfect for n8n Workflows**: Enables sheet-level processing, filtering, and transformations
 
 ### v1.1.5 (2025-01-04)
 - **✨ New Features**: Added user-configurable sheet metadata toggles

@@ -422,10 +422,12 @@ const strategies = {
                         jsonData.push(rowData);
                     }
                 });
-                sheets[sheetName] = {
-                    spreadsheetName: fileName || 'unknown',
+                const sheetData = {
+                    ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+                    ...((options?.includeSheetName !== false) && { sheetName: sheetName }),
                     data: (0, helpers_1.limitExcelSheet)(jsonData)
                 };
+                sheets[sheetName] = sheetData;
             });
             return { sheets };
         }
@@ -434,7 +436,7 @@ const strategies = {
         const encoding = chardet_1.default.detect(buf) || "utf-8";
         const decoded = iconv_lite_1.default.decode(buf, encoding);
         if (buf.length > CSV_STREAM_SIZE_LIMIT) {
-            return streamCsvStrategy(decoded, fileName);
+            return streamCsvStrategy(decoded, fileName, options);
         }
         return processExcel(decoded, "csv", options, fileName);
     },
@@ -490,7 +492,7 @@ const strategies = {
     html: async (buf) => processHtml(buf),
     htm: async (buf) => processHtml(buf),
 };
-async function streamCsvStrategy(data, fileName) {
+async function streamCsvStrategy(data, fileName, options) {
     return new Promise((resolve, reject) => {
         const rows = [];
         let rowCount = 0;
@@ -507,12 +509,14 @@ async function streamCsvStrategy(data, fileName) {
                 const warning = rowCount >= CSV_STREAM_ROW_LIMIT
                     ? `CSV truncated to ${CSV_STREAM_ROW_LIMIT} rows`
                     : undefined;
+                const sheetData = {
+                    ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+                    ...((options?.includeSheetName !== false) && { sheetName: 'Sheet1' }),
+                    data: rows
+                };
                 resolve({
                     sheets: {
-                        Sheet1: {
-                            spreadsheetName: fileName || 'unknown',
-                            data: rows
-                        }
+                        Sheet1: sheetData
                     },
                     warning,
                 });
@@ -525,7 +529,7 @@ async function processExcel(data, ext, options, fileName) {
     const workbook = new ExcelJS.Workbook();
     if (ext === "csv") {
         // Для CSV используем Papa Parse (уже реализовано в streamCsvStrategy)
-        return streamCsvStrategy(data);
+        return streamCsvStrategy(data, fileName, options);
     }
     else {
         // Для Excel файлов загружаем через ExcelJS
@@ -553,10 +557,12 @@ async function processExcel(data, ext, options, fileName) {
                 jsonData.push(rowData);
             }
         });
-        sheets[sheetName] = {
-            spreadsheetName: fileName || 'unknown',
+        const sheetData = {
+            ...((options?.includeSpreadsheetName !== false) && { spreadsheetName: fileName || 'unknown' }),
+            ...((options?.includeSheetName !== false) && { sheetName: sheetName }),
             data: (0, helpers_1.limitExcelSheet)(jsonData)
         };
+        sheets[sheetName] = sheetData;
     });
     return { sheets };
 }
@@ -632,6 +638,42 @@ class FileToJsonNode {
                         }
                     }
                 },
+                {
+                    displayName: "Include Spreadsheet Name",
+                    name: "includeSpreadsheetName",
+                    type: "boolean",
+                    default: true,
+                    description: "Include the spreadsheet filename in each sheet object",
+                    displayOptions: {
+                        show: {
+                        // Only show this option when processing files that could be Excel or CSV
+                        }
+                    }
+                },
+                {
+                    displayName: "Include Sheet Name",
+                    name: "includeSheetName",
+                    type: "boolean",
+                    default: true,
+                    description: "Include the sheet name in each sheet object",
+                    displayOptions: {
+                        show: {
+                        // Only show this option when processing files that could be Excel or CSV
+                        }
+                    }
+                },
+                {
+                    displayName: "Output Sheets as Separate Items",
+                    name: "outputSheetsAsSeparateItems",
+                    type: "boolean",
+                    default: false,
+                    description: "Output each sheet as a separate workflow item instead of grouped by file. Text files (PDF, DOCX, etc.) will be ignored when enabled.",
+                    displayOptions: {
+                        show: {
+                        // Only show this option when processing files that could have multiple sheets
+                        }
+                    }
+                },
             ],
         };
     }
@@ -660,6 +702,9 @@ class FileToJsonNode {
         const maxFileSize = this.getNodeParameter('maxFileSize', 0, 50) * 1024 * 1024; // MB в байты
         const maxConcurrency = this.getNodeParameter('maxConcurrency', 0, 4);
         const includeOriginalRowNumbers = this.getNodeParameter('includeOriginalRowNumbers', 0, false);
+        const includeSpreadsheetName = this.getNodeParameter('includeSpreadsheetName', 0, true);
+        const includeSheetName = this.getNodeParameter('includeSheetName', 0, true);
+        const outputSheetsAsSeparateItems = this.getNodeParameter('outputSheetsAsSeparateItems', 0, false);
         const processItem = async (item, i) => {
             const prop = this.getNodeParameter("binaryPropertyName", i, "data");
             // --- Input data validation ---
@@ -713,7 +758,10 @@ class FileToJsonNode {
                     throw new errors_1.UnsupportedFormatError(`Format "${ext}" is not supported`);
                 }
                 const options = {
-                    includeOriginalRowNumbers
+                    includeOriginalRowNumbers,
+                    includeSpreadsheetName,
+                    includeSheetName,
+                    outputSheetsAsSeparateItems
                 };
                 json = await strategies[ext](buf, ext, options, name);
             }
@@ -739,14 +787,50 @@ class FileToJsonNode {
             return { json };
         };
         const results = await promisePool(items, processItem, maxConcurrency);
-        // Объединяем все результаты в один item
-        return [[{
-                    json: {
-                        files: results.map(result => result.json),
-                        totalFiles: results.length,
-                        processedAt: new Date().toISOString()
+        if (outputSheetsAsSeparateItems) {
+            // Flatten sheets from all files into separate items
+            const separateItems = [];
+            for (const result of results) {
+                const json = result.json;
+                // Skip text files (only process files with sheets)
+                if ('sheets' in json && json.sheets && typeof json.sheets === 'object') {
+                    const sheets = json.sheets;
+                    for (const [sheetKey, sheetData] of Object.entries(sheets)) {
+                        if (sheetData && typeof sheetData === 'object' && 'data' in sheetData) {
+                            const separateItem = {
+                                data: sheetData.data
+                            };
+                            // Add optional metadata based on toggles
+                            if (includeSpreadsheetName && sheetData.spreadsheetName) {
+                                separateItem.spreadsheetName = sheetData.spreadsheetName;
+                            }
+                            if (includeSheetName && sheetData.sheetName) {
+                                separateItem.sheetName = sheetData.sheetName;
+                            }
+                            // Add simplified metadata
+                            separateItem.metadata = {
+                                fileName: json.metadata?.fileName || null,
+                                fileSize: json.metadata?.fileSize || null,
+                                fileType: json.metadata?.fileType || null,
+                                processedAt: json.metadata?.processedAt || new Date().toISOString()
+                            };
+                            separateItems.push({ json: separateItem });
+                        }
                     }
-                }]];
+                }
+            }
+            return [separateItems];
+        }
+        else {
+            // Объединяем все результаты в один item (current behavior)
+            return [[{
+                        json: {
+                            files: results.map(result => result.json),
+                            totalFiles: results.length,
+                            processedAt: new Date().toISOString()
+                        }
+                    }]];
+        }
     }
 }
 // Export for n8n
