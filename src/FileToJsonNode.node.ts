@@ -920,7 +920,7 @@ class FileToJsonNode {
               separateItem.fileSize = json.metadata?.fileSize || null;
               separateItem.processedAt = json.metadata?.processedAt || new Date().toISOString();
               
-              separateItems.push(separateItem);
+              separateItems.push({ json: separateItem });
             }
           }
         }

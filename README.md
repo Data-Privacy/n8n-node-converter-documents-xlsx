@@ -423,6 +423,12 @@ npm list
 
 ## 📈 Latest Updates
 
+### v1.1.7 (2025-01-04)
+- **🐛 Critical Fix**: Resolved "outputData.entries is not a function" error when using "Output Sheets as Separate Items"
+- **n8n Compatibility**: Fixed return format to properly wrap each sheet item for n8n workflow processing
+- **Root Cause**: n8n requires each workflow item to be wrapped in `{ json: ... }` structure
+- **Impact**: "Output Sheets as Separate Items" feature now works correctly in all n8n workflows
+
 ### v1.1.6 (2025-01-04)
 - **🚀 Major Feature**: Added "Output Sheets as Separate Items" functionality
 - **Individual Sheet Processing**: Each sheet becomes a separate n8n workflow item for parallel processing

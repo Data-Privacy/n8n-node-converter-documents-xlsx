@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.7] - 2025-01-04
+
+### 🐛 Critical Bug Fix
+- **Fixed n8n Compatibility Issue**: Resolved "outputData.entries is not a function" error when using "Output Sheets as Separate Items" feature
+- **Root Cause**: n8n requires each workflow item to be wrapped in `{ json: ... }` structure
+- **Solution**: Updated return format to properly wrap each sheet item for n8n workflow processing
+- **Impact**: "Output Sheets as Separate Items" feature now works correctly in n8n workflows
+
+### 🔧 Technical Details
+- **Fixed Return Format**: Each item now properly wrapped as `{ json: separateItem }` instead of raw `separateItem`
+- **n8n Compatibility**: Ensures proper iteration over output items in n8n workflow execution
+- **No Breaking Changes**: Fix only affects the separate items mode, standard grouped output unchanged
+
+### 📁 Files Modified
+- `src/FileToJsonNode.node.ts`: Fixed return format for separate items output
+- `package.json`: Version bump to 1.1.7
+- `CHANGELOG.md`: This critical fix entry
+
+---
+
 ## [1.1.6] - 2025-01-04
 
 ### 🚀 Major New Feature: Output Sheets as Separate Items
