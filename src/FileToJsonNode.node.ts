@@ -926,7 +926,7 @@ class FileToJsonNode {
         }
       }
       
-      return separateItems;
+      return [separateItems];
     } else {
       // Объединяем все результаты в один item (current behavior)
       return [[{

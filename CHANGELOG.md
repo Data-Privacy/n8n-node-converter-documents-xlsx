@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.8] - 2025-01-04
+
+### 🐛 Critical Bug Fix (Second Attempt)
+- **Fixed n8n Array Format Issue**: Resolved persistent "outputData.entries is not a function" error 
+- **Root Cause**: n8n requires return format to be array of arrays: `[separateItems]` not `separateItems`
+- **Solution**: Changed `return separateItems;` to `return [separateItems];` to match working grouped output format
+- **Verification**: Now matches the exact format used in working grouped mode `[[{json: {...}}]]`
+
+### 🔧 Technical Details
+- **Fixed Return Format**: `return [separateItems];` (array containing array of items)
+- **Consistent Structure**: Both modes now return `[array_of_items]` format
+- **n8n Compatibility**: Proper array nesting for n8n workflow execution engine
+
+### 📁 Files Modified
+- `src/FileToJsonNode.node.ts`: Fixed array nesting for separate items output
+- `package.json`: Version bump to 1.1.8
+- `CHANGELOG.md`: This critical fix entry
+
+---
+
 ## [1.1.7] - 2025-01-04
 
 ### 🐛 Critical Bug Fix

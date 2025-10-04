@@ -423,6 +423,12 @@ npm list
 
 ## 📈 Latest Updates
 
+### v1.1.8 (2025-01-04)
+- **🐛 Critical Fix (Final)**: Resolved persistent "outputData.entries is not a function" error
+- **Array Format Fix**: Changed return format to `[separateItems]` instead of `separateItems`
+- **Root Cause**: n8n requires array of arrays format, matching grouped output structure
+- **Impact**: "Output Sheets as Separate Items" feature now works correctly in all n8n workflows
+
 ### v1.1.7 (2025-01-04)
 - **🐛 Critical Fix**: Resolved "outputData.entries is not a function" error when using "Output Sheets as Separate Items"
 - **n8n Compatibility**: Fixed return format to properly wrap each sheet item for n8n workflow processing
